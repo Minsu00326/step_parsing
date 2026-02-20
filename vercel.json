@@ -1,0 +1,35 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "buildCommand": "python3 viewer/build_models_manifest.py",
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/viewer/"
+    },
+    {
+      "source": "/api/models",
+      "destination": "/viewer/models.json"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/viewer/models.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/:dir(out|out_v2)/:file*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ]
+}

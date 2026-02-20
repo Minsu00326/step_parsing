@@ -25,3 +25,5 @@ out/*
 out_v2/*
 !out/.gitkeep
 !out_v2/.gitkeep
+!out_v2/model*.obj
+!out_v2/report*.json

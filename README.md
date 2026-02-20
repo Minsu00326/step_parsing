@@ -125,6 +125,32 @@ python -m src.main --input path/to/model.step --out out/
 - 장점: 무료/빠름/설정 단순
 - 단점: 서버 API 없음, 모델 목록은 매니페스트 재생성 필요
 
+## Vercel 배포 (레포 연결)
+이 저장소는 `vercel.json`이 포함되어 있어 레포 연결 시 기본 동작이 설정됩니다.
+
+- `/` 접속 시 `/viewer/`로 리라이트
+- `/api/models` 요청 시 `/viewer/models.json` 사용
+- 빌드 시 `python3 viewer/build_models_manifest.py` 실행
+
+배포 전에 한 번 실행:
+```bash
+python viewer/build_models_manifest.py
+```
+
+레포에 포함할 파일:
+- `viewer/index.html`
+- `viewer/models.json`
+- `vercel.json`
+- `out_v2/model*.obj`
+- `out_v2/report*.json`
+
+`.gitignore`는 `out_v2`에서 위 파일(`model*.obj`, `report*.json`)만 추적하도록 설정되어 있습니다.
+
+Vercel 설정(Import Git Repository):
+- Framework Preset: `Other`
+- Build Command: `python3 viewer/build_models_manifest.py` (vercel.json 기본값 사용 가능)
+- Output Directory: 비워두기(루트 정적 파일 사용)
+
 ## GitHub 업로드 준비
 이 저장소는 `out/`, `out_v2/`를 결과물 폴더로 사용하므로, Git에는 폴더만 유지하고 내부 생성 파일은 기본적으로 제외합니다.
 

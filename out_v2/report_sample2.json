@@ -1,0 +1,136 @@
+{
+  "step_header": {
+    "file_schema": "'AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }'",
+    "file_name": "'Open CASCADE Shape Model','2026-02-20T02:25:03',('Author'),(\n    ''),'Open CASCADE STEP processor 7.8','FreeCAD','Unknown'",
+    "file_description": "('FreeCAD Model'),'2;1'",
+    "units_raw": [
+      "SI_UNIT($,.RADIAN.)",
+      "SI_UNIT($,.STERADIAN.)",
+      "SI_UNIT(.MILLI.,.METRE.)"
+    ],
+    "units_parsed": {
+      "length": {
+        "name": "millimetre",
+        "symbol": "mm",
+        "to_m": 0.001,
+        "source": "SI_UNIT_LENGTH",
+        "line": 40,
+        "expr": "#25 = ( LENGTH_UNIT() NAMED_UNIT(*) SI_UNIT(.MILLI.,.METRE.) );"
+      },
+      "angle": {
+        "name": "radian",
+        "symbol": "rad",
+        "to_rad": 1.0,
+        "source": "SI_UNIT_ANGLE",
+        "line": 41,
+        "expr": "#26 = ( NAMED_UNIT(*) PLANE_ANGLE_UNIT() SI_UNIT($,.RADIAN.) );"
+      }
+    },
+    "entity_name_stats": {
+      "advanced_face": {
+        "total": 0,
+        "named": 0,
+        "none_or_empty": 0,
+        "sample_names": []
+      },
+      "edge_curve": {
+        "total": 0,
+        "named": 0,
+        "none_or_empty": 0,
+        "sample_names": []
+      },
+      "manifold_solid_brep": {
+        "total": 0,
+        "named": 0,
+        "none_or_empty": 0,
+        "sample_names": []
+      },
+      "product": {
+        "total": 1,
+        "named": 1,
+        "none_or_empty": 0,
+        "sample_names": [
+          "WELD_2"
+        ]
+      }
+    },
+    "presentation_stats": {
+      "colour_rgb_total": 1,
+      "colour_rgb_unique": 1,
+      "palette_top": [
+        {
+          "rgb_0_1": [
+            0.098039218,
+            0.098039218,
+            0.098039218
+          ],
+          "rgb_255": [
+            25,
+            25,
+            25
+          ],
+          "hex": "#191919",
+          "count": 1
+        }
+      ],
+      "layer_assignment_total": 0,
+      "layer_assignment_named": 0,
+      "layer_named_samples": [],
+      "styled_item_total": 1,
+      "styled_item_named": 1,
+      "styled_item_named_samples": [
+        "color"
+      ],
+      "face_color_total_from_xcaf": 0,
+      "face_color_hit_from_xcaf": 0,
+      "face_color_hit_ratio_from_xcaf": null,
+      "face_color_source": "STEPCAF",
+      "face_part_mapped_total": 0,
+      "face_part_multi_candidate_total": 0,
+      "part_solid_total": 0,
+      "part_note": "PART_MAPPING_NONE",
+      "part_name_samples": [],
+      "part_name_human_samples": [],
+      "face_layer_mapped_total": 0
+    },
+    "human_named_signals": {
+      "product_names": [
+        "WELD_2"
+      ],
+      "manifold_solid_brep_names": [],
+      "shape_representation_names": [],
+      "assembly_instance_names": [],
+      "human_name_candidates": [
+        "WELD_2"
+      ],
+      "weld_related_name_hits": [
+        "WELD_2"
+      ]
+    },
+    "occt_binding": "OCP(cadquery-ocp)",
+    "transfer_mode": "STEPControl_AsIs"
+  },
+  "counts": {
+    "solids": 0,
+    "shells": 0,
+    "faces": 0,
+    "edges": 1,
+    "vertices": 2
+  },
+  "global_bounding_box": {
+    "min": [
+      190.0,
+      70.0,
+      55.0
+    ],
+    "max": [
+      190.0,
+      80.0,
+      60.0
+    ]
+  },
+  "total_surface_area": 0.0,
+  "total_volume": null,
+  "faces": [],
+  "faces_by_id": {}
+}

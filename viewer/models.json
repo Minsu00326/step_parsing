@@ -1,3 +1,79 @@
 {
-  "models": []
+  "models": [
+    {
+      "name": "out_v2_welding_sample_with_label",
+      "model": "/out_v2/model_welding_sample_with_label.obj",
+      "report": "/out_v2/report_welding_sample_with_label.json"
+    },
+    {
+      "name": "out_v2_welding_sample",
+      "model": "/out_v2/model_welding_sample.obj",
+      "report": "/out_v2/report_welding_sample.json"
+    },
+    {
+      "name": "out_v2_sample2",
+      "model": "/out_v2/model_sample2.obj",
+      "report": "/out_v2/report_sample2.json"
+    },
+    {
+      "name": "out_v2_SierraPacific-W431",
+      "model": "/out_v2/model_SierraPacific-W431.obj",
+      "report": "/out_v2/report_SierraPacific-W431.json"
+    },
+    {
+      "name": "out_v2_sample_StairCase",
+      "model": "/out_v2/model_sample_StairCase.obj",
+      "report": "/out_v2/report_sample_StairCase.json"
+    },
+    {
+      "name": "out_v2_Stair-Case-3D_example",
+      "model": "/out_v2/model_Stair-Case-3D_example.obj",
+      "report": "/out_v2/report_Stair-Case-3D_example.json"
+    },
+    {
+      "name": "out_cylinder_test",
+      "model": "/out/model_cylinder_test.obj",
+      "report": "/out/report_cylinder_test.json"
+    },
+    {
+      "name": "out_test_case1",
+      "model": "/out/model_test_case1.obj",
+      "report": "/out/report_test_case1.json"
+    },
+    {
+      "name": "out_Stair-Case-3D_example",
+      "model": "/out/model_Stair-Case-3D_example.obj",
+      "report": "/out/report_Stair-Case-3D_example.json"
+    },
+    {
+      "name": "out_SierraPacific-W431",
+      "model": "/out/model_SierraPacific-W431.obj",
+      "report": "/out/report_SierraPacific-W431.json"
+    },
+    {
+      "name": "out_sample_StairCase",
+      "model": "/out/model_sample_StairCase.obj",
+      "report": "/out/report_sample_StairCase.json"
+    },
+    {
+      "name": "out_sample2",
+      "model": "/out/model_sample2.obj",
+      "report": "/out/report_sample2.json"
+    },
+    {
+      "name": "out_welding_sample_with_label",
+      "model": "/out/model_welding_sample_with_label.obj",
+      "report": "/out/report_welding_sample_with_label.json"
+    },
+    {
+      "name": "out_welding_sample",
+      "model": "/out/model_welding_sample.obj",
+      "report": "/out/report_welding_sample.json"
+    },
+    {
+      "name": "out_backup",
+      "model": "/out/model_backup.obj",
+      "report": "/out/report_backup.json"
+    }
+  ]
 }
