@@ -74,6 +74,12 @@ python viewer/serve.py --port 8000
 필요하면 URL 파라미터 지정 가능:
 - `http://127.0.0.1:8000/viewer/?model=../out/model.obj&report=../out/report.json`
 
+정적 호스팅용 모델 목록 파일 생성:
+```bash
+python viewer/build_models_manifest.py
+```
+생성 파일: `viewer/models.json`
+
 ## 3) Docker (선택)
 ```bash
 docker build -t step-face-poc .
@@ -105,6 +111,19 @@ python -m src.main --input path/to/model.step --out out/
 - `--linear-deflection` (기본 0.2)
 - `--angular-deflection` (기본 0.3)
 - `--log-level` (기본 INFO)
+
+## 무료 호스팅 제안
+1. Render (가장 간단)
+- Python 서버(`viewer/serve.py`) 그대로 사용 가능
+- 장점: `/api/models` 자동 동작, 별도 정적 설정 불필요
+- 단점: free tier 슬립/콜드스타트
+
+2. GitHub Pages / Netlify / Cloudflare Pages (정적)
+- `viewer/models.json`을 기준으로 모델 목록 로드
+- 배포 전 `python viewer/build_models_manifest.py` 실행 필요
+- 기본 `.gitignore`는 `out/`, `out_v2/` 결과물을 제외하므로, 정적 배포 시에는 결과물 포함 전략이 필요
+- 장점: 무료/빠름/설정 단순
+- 단점: 서버 API 없음, 모델 목록은 매니페스트 재생성 필요
 
 ## GitHub 업로드 준비
 이 저장소는 `out/`, `out_v2/`를 결과물 폴더로 사용하므로, Git에는 폴더만 유지하고 내부 생성 파일은 기본적으로 제외합니다.

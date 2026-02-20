@@ -606,6 +606,7 @@
       let loadedObject = null;
       let selectedEdgeId = null;
       let selectedEdgeLine = null;
+      let loadGeneration = 0;
       const meshByFaceId = new Map();
 
       function escapeHtml(v) {
@@ -2173,23 +2174,37 @@
         modelSelectEl.value = String(selectedViewIdx);
       }
 
+      function setLoadingUi(isLoading, text = "") {
+        modelSelectEl.disabled = isLoading;
+        folderSelectEl.disabled = isLoading;
+        refreshModelsEl.disabled = isLoading;
+        if (isLoading) {
+          selectedSummaryEl.textContent = text || "모델 로딩 중...";
+          edgeListEl.textContent = "로딩 중...";
+          metaEl.textContent = "{}";
+        }
+      }
+
+      function disposeObject3D(rootObj) {
+        if (!rootObj) return;
+        rootObj.traverse((child) => {
+          if (!child?.isMesh) return;
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              for (const m of child.material) m.dispose?.();
+            } else {
+              child.material.dispose?.();
+            }
+          }
+        });
+      }
+
       function clearLoadedObject() {
         if (loadedObject && loadedObject.parent) {
           loadedObject.parent.remove(loadedObject);
         }
-        if (loadedObject) {
-          loadedObject.traverse((child) => {
-            if (!child?.isMesh) return;
-            if (child.geometry) child.geometry.dispose();
-            if (child.material) {
-              if (Array.isArray(child.material)) {
-                for (const m of child.material) m.dispose?.();
-              } else {
-                child.material.dispose?.();
-              }
-            }
-          });
-        }
+        disposeObject3D(loadedObject);
         loadedObject = null;
         selectable = [];
         allMeshes = [];
@@ -2212,23 +2227,44 @@
       }
 
       async function loadModelBundle(modelUrl, reportUrl) {
+        const generation = ++loadGeneration;
         currentModelUrl = modelUrl;
         currentReportUrl = reportUrl;
         setModelPathLabel(modelUrl, reportUrl);
         clearLoadedObject();
+        setLoadingUi(true, "모델 로딩 중...");
 
-        const [loadedReport, obj] = await Promise.all([
-          fetch(reportUrl).then((r) => {
-            if (!r.ok) throw new Error(`리포트 로드 실패: ${r.status}`);
-            return r.json();
-          }),
-          new OBJLoader().loadAsync(modelUrl),
-        ]);
+        let loadedReport;
+        let obj;
+        try {
+          [loadedReport, obj] = await Promise.all([
+            fetch(reportUrl).then((r) => {
+              if (!r.ok) throw new Error(`리포트 로드 실패: ${r.status}`);
+              return r.json();
+            }),
+            new OBJLoader().loadAsync(modelUrl),
+          ]);
+        } catch (e) {
+          if (generation === loadGeneration) {
+            setLoadingUi(false);
+          }
+          throw e;
+        }
+        if (generation !== loadGeneration) {
+          // Newer request already started; drop stale result.
+          disposeObject3D(obj);
+          return;
+        }
+
         report = loadedReport;
         renderGlossary();
         renderHumanSignals();
 
-        countsEl.textContent = `솔리드: ${report.counts.solids}, 면: ${report.counts.faces}, 엣지: ${report.counts.edges}`;
+        const counts = report?.counts || {};
+        const solidsCount = Number.isFinite(Number(counts.solids)) ? Number(counts.solids) : "-";
+        const facesCount = Number.isFinite(Number(counts.faces)) ? Number(counts.faces) : "-";
+        const edgesCount = Number.isFinite(Number(counts.edges)) ? Number(counts.edges) : "-";
+        countsEl.textContent = `솔리드: ${solidsCount}, 면: ${facesCount}, 엣지: ${edgesCount}`;
         renderStepNameHint();
 
         const foundFaceIds = [];
@@ -2258,17 +2294,20 @@
           if (!meshByFaceId.has(faceId)) meshByFaceId.set(faceId, child);
         });
 
+        scene.add(obj);
+        loadedObject = obj;
         faceIdsAll = sortFaceIds(Array.from(new Set(foundFaceIds)));
         if (faceIdsAll.length === 0) {
           selectedSummaryEl.textContent = "면 그룹 없음";
-          metaEl.textContent = "out/model.obj에 `o FaceN` 그룹이 있는지 확인하세요.";
+          edgeListEl.textContent = "선택 없음";
+          metaEl.textContent = "OBJ는 표시되지만 FaceN 그룹이 없어 선택 매핑이 제한됩니다.";
+          setLoadingUi(false);
+          updateUrlQuery(modelUrl, reportUrl);
           return;
         }
 
         rebuildLegendAndFilters();
         applyFilters();
-        scene.add(obj);
-        loadedObject = obj;
 
         const box = new THREE.Box3().setFromObject(obj);
         const size = new THREE.Vector3();
@@ -2280,18 +2319,27 @@
         const dist = Math.max(size.x, size.y, size.z) * 1.8 || 10;
         camera.position.set(center.x + dist, center.y + dist, center.z + dist);
         updateUrlQuery(modelUrl, reportUrl);
+        setLoadingUi(false);
       }
 
       async function refreshModelList() {
         let models = [];
-        try {
-          const res = await fetch("/api/models");
-          if (res.ok) {
+        const staticModelsUrl = new URL("./models.json", location.href).toString();
+        async function tryFetchModels(url) {
+          try {
+            const res = await fetch(url, { cache: "no-store" });
+            if (!res.ok) return [];
             const data = await res.json();
-            if (Array.isArray(data.models)) models = data.models;
+            return Array.isArray(data?.models) ? data.models : [];
+          } catch (_) {
+            return [];
           }
-        } catch (_) {
-          // fallback below
+        }
+
+        models = await tryFetchModels("/api/models");
+        if (models.length === 0) {
+          // Static-host fallback for GitHub Pages / Netlify etc.
+          models = await tryFetchModels(staticModelsUrl);
         }
         if (models.length === 0) {
           models = [
@@ -2357,10 +2405,21 @@
 
       async function loadSelectedFromDropdown() {
         const viewIdx = Number.parseInt(modelSelectEl.value, 10);
-        if (!Number.isFinite(viewIdx) || viewIdx < 0 || viewIdx >= visibleBundleIndices.length) return;
+        if (!Number.isFinite(viewIdx) || viewIdx < 0 || viewIdx >= visibleBundleIndices.length) {
+          clearLoadedObject();
+          selectedSummaryEl.textContent = "모델 없음";
+          edgeListEl.textContent = "선택 없음";
+          metaEl.textContent = "선택 가능한 모델 번들이 없습니다.";
+          countsEl.textContent = "";
+          return;
+        }
         const bundleIdx = visibleBundleIndices[viewIdx];
         const bundle = modelBundles[bundleIdx];
-        if (!bundle) return;
+        if (!bundle) {
+          clearLoadedObject();
+          selectedSummaryEl.textContent = "모델 없음";
+          return;
+        }
         await loadModelBundle(bundle.model, bundle.report);
       }
 
@@ -2398,15 +2457,11 @@
           console.error(e);
         });
       });
-      modelSelectEl.addEventListener("input", () => {
-        loadSelectedFromDropdown().catch((e) => {
-          selectedSummaryEl.textContent = "로드 실패";
-          metaEl.textContent = `${e.message}`;
-          console.error(e);
-        });
-      });
       refreshModelsEl.addEventListener("click", () => {
-        refreshModelList().catch((e) => {
+        (async () => {
+          await refreshModelList();
+          await loadSelectedFromDropdown();
+        })().catch((e) => {
           selectedSummaryEl.textContent = "모델 목록 로드 실패";
           metaEl.textContent = `${e.message}`;
           console.error(e);
