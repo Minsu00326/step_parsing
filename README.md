@@ -151,6 +151,9 @@ Vercel 설정(Import Git Repository):
 - Build Command: `python3 viewer/build_models_manifest.py` (vercel.json 기본값 사용 가능)
 - Output Directory: 비워두기(루트 정적 파일 사용)
 
+`cadquery-ocp`는 현재 CPython 3.14(`cp314`) 휠이 없어 Vercel 기본 Python 의존성 설치에서 실패할 수 있습니다.
+이 저장소는 `vercel.json`의 `installCommand`를 no-op으로 설정해 정적 뷰어 배포 시 해당 오류를 회피합니다.
+
 ## GitHub 업로드 준비
 이 저장소는 `out/`, `out_v2/`를 결과물 폴더로 사용하므로, Git에는 폴더만 유지하고 내부 생성 파일은 기본적으로 제외합니다.
 

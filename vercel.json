@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
+  "installCommand": "echo 'skip python dependency install for static viewer deploy'",
   "buildCommand": "python3 viewer/build_models_manifest.py",
   "rewrites": [
     {
