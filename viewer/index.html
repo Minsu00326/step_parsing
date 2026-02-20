@@ -1,0 +1,2441 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>STEP 매핑 뷰어</title>
+    <style>
+      :root {
+        --bg: #ece8df;
+        --panel: #f9f3e5;
+        --panel-2: #fffaf0;
+        --text: #1f1a12;
+        --muted: #6e6658;
+        --accent: #0f5d6a;
+        --border: #d6c7a9;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: radial-gradient(circle at 20% 18%, #fffdf8, var(--bg));
+        color: var(--text);
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      }
+      #root {
+        display: grid;
+        grid-template-columns: 440px 1fr;
+        height: 100%;
+      }
+      #sidebar {
+        border-right: 1px solid var(--border);
+        background: linear-gradient(180deg, var(--panel), var(--panel-2));
+        padding: 12px;
+        overflow: auto;
+      }
+      #canvas-wrap {
+        position: relative;
+      }
+      #canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      h1 {
+        margin: 0 0 8px 0;
+        font-size: 20px;
+      }
+      h2 {
+        margin: 12px 0 8px 0;
+        font-size: 15px;
+      }
+      .small {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 8px;
+      }
+      .row.wrap {
+        flex-wrap: wrap;
+      }
+      select,
+      input[type="search"] {
+        flex: 1;
+        min-width: 0;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px 8px;
+        background: #fffdf8;
+        color: var(--text);
+      }
+      input[type="range"] {
+        flex: 1;
+      }
+      button {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px 10px;
+        background: #fff;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      details.card,
+      .card {
+        margin-top: 8px;
+        padding: 8px;
+        border: 1px solid var(--border);
+        background: #fff;
+        border-radius: 8px;
+      }
+      details.card summary {
+        cursor: pointer;
+        font-size: 13px;
+        color: #3f3a30;
+      }
+      #glossary-list {
+        margin-top: 8px;
+      }
+      .glossary-item {
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+      .glossary-item .g-title {
+        font-weight: 600;
+      }
+      .glossary-item .g-official {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .human-block {
+        margin-top: 8px;
+        font-size: 12px;
+      }
+      .human-title {
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .human-text {
+        color: #494235;
+        margin-bottom: 4px;
+      }
+      .human-list {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .human-list li {
+        margin-bottom: 2px;
+      }
+      #legend {
+        margin-top: 8px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+      .swatch {
+        width: 11px;
+        height: 11px;
+        border-radius: 2px;
+        border: 1px solid #00000022;
+      }
+      #face-list {
+        list-style: none;
+        padding: 0;
+        margin: 10px 0 0;
+      }
+      #face-list .face-group {
+        margin-bottom: 6px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fff;
+      }
+      #face-list .face-group > summary {
+        cursor: pointer;
+        padding: 7px 8px;
+        font-size: 12px;
+        color: #3f3a30;
+        user-select: none;
+      }
+      #face-list .group-face-list {
+        list-style: none;
+        margin: 0;
+        padding: 0 6px 6px;
+      }
+      #face-list li {
+        padding: 8px;
+        margin-bottom: 5px;
+        border: 1px solid var(--border);
+        background: #fff;
+        cursor: pointer;
+        border-radius: 7px;
+      }
+      #face-list li.active {
+        background: #dff2f5;
+        border-color: var(--accent);
+      }
+      #face-list .title {
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      #face-list .sub {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .selected-title {
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .selected-sub {
+        margin-top: 4px;
+        color: #464035;
+        font-size: 12px;
+      }
+      .selected-kv {
+        margin-top: 6px;
+        display: grid;
+        grid-template-columns: 116px 1fr;
+        row-gap: 4px;
+        font-size: 12px;
+      }
+      .selected-kv .k {
+        color: var(--muted);
+      }
+      .selected-kv > div:nth-child(even) {
+        word-break: break-word;
+      }
+      .selected-section {
+        margin-top: 10px;
+        border-top: 1px dashed var(--border);
+        padding-top: 8px;
+      }
+      .selected-section .s-title {
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .selected-top {
+        margin-top: 6px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        font-size: 12px;
+      }
+      .selected-chip {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: #fff;
+        padding: 4px 8px;
+      }
+      .selected-chip .k {
+        color: var(--muted);
+        margin-right: 6px;
+      }
+      #edge-list {
+        margin-top: 6px;
+        max-height: 220px;
+        overflow: auto;
+      }
+      .edge-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+        margin-bottom: 6px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: #fff;
+        padding: 6px 8px;
+        text-align: left;
+        cursor: pointer;
+      }
+      .edge-row.active {
+        border-color: var(--accent);
+        background: #dff2f5;
+      }
+      .edge-row .e-main {
+        font-size: 12px;
+      }
+      .edge-row .e-sub {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .layer-row {
+        margin-top: 8px;
+      }
+      .layer-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .layer-apply {
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .layer-quick {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .chip-row {
+        margin-top: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .mini-chip {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 11px;
+        background: #fffdf7;
+        color: #4f4638;
+      }
+      .mini-chip.good {
+        border-color: #95b98f;
+        background: #edf8e9;
+        color: #36582f;
+      }
+      .mini-chip.warn {
+        border-color: #d9b37b;
+        background: #fff6e7;
+        color: #6d4f23;
+      }
+      .state-note {
+        margin-top: 6px;
+        padding: 6px 8px;
+        border: 1px dashed var(--border);
+        border-radius: 6px;
+        font-size: 11px;
+        color: #594f40;
+        background: #fffcf3;
+      }
+      .layer-more {
+        margin-top: 6px;
+      }
+      .layer-line {
+        font-size: 12px;
+        color: #494235;
+        margin-top: 4px;
+      }
+      .selected-kv.compact {
+        grid-template-columns: 140px 1fr;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 12px;
+        background: #fff;
+        border: 1px solid var(--border);
+        padding: 8px;
+        border-radius: 6px;
+        margin: 0;
+      }
+      @media (max-width: 1024px) {
+        #root {
+          grid-template-columns: 100%;
+          grid-template-rows: 58% 42%;
+        }
+        #sidebar {
+          order: 2;
+          border-right: 0;
+          border-top: 1px solid var(--border);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <aside id="sidebar">
+        <h1>STEP 매핑 뷰어</h1>
+        <div class="small" id="counts"></div>
+        <div class="small" id="name-hint"></div>
+        <h2>모델</h2>
+        <div class="row">
+          <select id="folder-select">
+            <option value="ALL">전체 출력 폴더</option>
+          </select>
+        </div>
+        <div class="row">
+          <select id="model-select">
+            <option value="">모델 목록 로딩 중...</option>
+          </select>
+          <button id="refresh-models" type="button">새로고침</button>
+        </div>
+        <div class="small" id="model-path"></div>
+
+        <details class="card" open>
+          <summary>매핑 요약</summary>
+          <div id="human-signals"></div>
+        </details>
+
+        <details class="card" open>
+          <summary>레이어 매핑</summary>
+          <div class="row">
+            <input id="layer-map-search" type="search" placeholder="레이어/참조/타입 검색 (예: WELDING, #234, TRIMMED_CURVE)" />
+          </div>
+          <div id="layer-map"></div>
+        </details>
+
+        <details class="card">
+          <summary>용어 사전 (STEP/OCCT)</summary>
+          <div id="glossary-list"></div>
+        </details>
+
+        <h2>필터/정렬</h2>
+        <div class="row">
+          <select id="surface-filter">
+            <option value="ALL">전체 면 타입</option>
+          </select>
+        </div>
+        <div class="row">
+          <select id="part-filter">
+            <option value="ALL">전체 파트</option>
+          </select>
+        </div>
+        <div class="row">
+          <select id="layer-filter">
+            <option value="ALL">전체 레이어</option>
+          </select>
+        </div>
+        <div class="row">
+          <select id="sort-mode">
+            <option value="face_id">면 ID 순</option>
+            <option value="area_desc">면적 큰 순</option>
+            <option value="area_asc">면적 작은 순</option>
+          </select>
+        </div>
+        <div class="row">
+          <input id="search" type="search" placeholder="면ID/타입/레이어/STEP 참조/엣지 검색" />
+        </div>
+        <div class="row wrap">
+          <label><input id="isolate" type="checkbox" checked /> 비선택 면 흐리게</label>
+        </div>
+        <div class="row">
+          <label for="opacity-scale">투명도</label>
+          <input id="opacity-scale" type="range" min="0.40" max="1.60" step="0.05" value="1.00" />
+          <span id="opacity-scale-value" class="small">1.00x</span>
+        </div>
+        <div class="row">
+          <button id="prev-face" type="button">이전 면</button>
+          <button id="next-face" type="button">다음 면</button>
+          <button id="fit-selected" type="button">선택 줌</button>
+        </div>
+        <div class="small" id="filtered-count"></div>
+
+        <h2>면 타입 범례</h2>
+        <div id="legend" class="card"></div>
+
+        <h2>선택 면</h2>
+        <div id="selected-summary" class="card">선택 없음</div>
+        <h2>선택 엣지</h2>
+        <div id="edge-list" class="card">선택 없음</div>
+
+        <h2>면 목록</h2>
+        <div class="row wrap">
+          <label><input id="group-face-list" type="checkbox" checked /> 파트별 그룹</label>
+        </div>
+        <ul id="face-list"></ul>
+
+        <details class="card">
+          <summary>원본 메타데이터</summary>
+          <pre id="meta">선택 없음</pre>
+        </details>
+      </aside>
+      <main id="canvas-wrap"><canvas id="canvas"></canvas></main>
+    </div>
+
+    <script type="module">
+      import * as THREE from "https://esm.sh/three@0.161.0";
+      import { TrackballControls } from "https://esm.sh/three@0.161.0/examples/jsm/controls/TrackballControls.js";
+      import { OBJLoader } from "https://esm.sh/three@0.161.0/examples/jsm/loaders/OBJLoader.js";
+
+      const QUERY = new URLSearchParams(location.search);
+      const QUERY_MODEL_URL = QUERY.get("model") || "";
+      const QUERY_REPORT_URL = QUERY.get("report") || "";
+      const DEFAULT_MODEL_URL = QUERY.get("model") || "/out/model.obj";
+      const DEFAULT_REPORT_URL = QUERY.get("report") || "/out/report.json";
+
+      const SURFACE_INFO = {
+        Plane: {
+          ko: "평면",
+          easy: "평평한 면",
+          official: "STEP: ADVANCED_FACE + PLANE",
+        },
+        Cylinder: {
+          ko: "원통면",
+          easy: "원통 옆면",
+          official: "STEP: ADVANCED_FACE + CYLINDRICAL_SURFACE",
+        },
+        Cone: {
+          ko: "원뿔면",
+          easy: "테이퍼 옆면",
+          official: "STEP: ADVANCED_FACE + CONICAL_SURFACE",
+        },
+        Sphere: {
+          ko: "구면",
+          easy: "구 형태 면",
+          official: "STEP: ADVANCED_FACE + SPHERICAL_SURFACE",
+        },
+        Torus: {
+          ko: "토러스",
+          easy: "도넛형 면",
+          official: "STEP: ADVANCED_FACE + TOROIDAL_SURFACE",
+        },
+        BSplineSurface: {
+          ko: "B-스플라인 면",
+          easy: "자유곡면",
+          official: "STEP: ADVANCED_FACE + B_SPLINE_SURFACE",
+        },
+        BezierSurface: {
+          ko: "베지어 면",
+          easy: "베지어 제어점 면",
+          official: "STEP: ADVANCED_FACE + BEZIER_SURFACE",
+        },
+        SurfaceOfRevolution: {
+          ko: "회전면",
+          easy: "프로파일 회전 생성 면",
+          official: "OCCT GeomAbs_SurfaceOfRevolution",
+        },
+        SurfaceOfExtrusion: {
+          ko: "압출면",
+          easy: "직선 압출 생성 면",
+          official: "OCCT GeomAbs_SurfaceOfExtrusion",
+        },
+        OffsetSurface: {
+          ko: "오프셋면",
+          easy: "기준면 오프셋 생성 면",
+          official: "OCCT GeomAbs_OffsetSurface",
+        },
+        OtherSurface: {
+          ko: "기타 면",
+          easy: "비표준 면 타입",
+          official: "OCCT GeomAbs_OtherSurface",
+        },
+      };
+
+      const DEFAULT_COLOR = 0xb2b8b2;
+
+      const canvas = document.getElementById("canvas");
+      const modelSelectEl = document.getElementById("model-select");
+      const folderSelectEl = document.getElementById("folder-select");
+      const refreshModelsEl = document.getElementById("refresh-models");
+      const modelPathEl = document.getElementById("model-path");
+      const surfaceFilterEl = document.getElementById("surface-filter");
+      const partFilterEl = document.getElementById("part-filter");
+      const layerFilterEl = document.getElementById("layer-filter");
+      const sortModeEl = document.getElementById("sort-mode");
+      const searchEl = document.getElementById("search");
+      const isolateEl = document.getElementById("isolate");
+      const opacityScaleEl = document.getElementById("opacity-scale");
+      const opacityScaleValueEl = document.getElementById("opacity-scale-value");
+      const faceListEl = document.getElementById("face-list");
+      const groupFaceListEl = document.getElementById("group-face-list");
+      const selectedSummaryEl = document.getElementById("selected-summary");
+      const metaEl = document.getElementById("meta");
+      const legendEl = document.getElementById("legend");
+      const countsEl = document.getElementById("counts");
+      const nameHintEl = document.getElementById("name-hint");
+      const humanSignalsEl = document.getElementById("human-signals");
+      const layerMapSearchEl = document.getElementById("layer-map-search");
+      const layerMapEl = document.getElementById("layer-map");
+      const glossaryListEl = document.getElementById("glossary-list");
+      const filteredCountEl = document.getElementById("filtered-count");
+      const prevFaceBtn = document.getElementById("prev-face");
+      const nextFaceBtn = document.getElementById("next-face");
+      const fitSelectedBtn = document.getElementById("fit-selected");
+      const edgeListEl = document.getElementById("edge-list");
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xece8df);
+
+      const camera = new THREE.PerspectiveCamera(60, 2, 0.01, 10000);
+      camera.position.set(5, 5, 5);
+
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+      const controls = new TrackballControls(camera, renderer.domElement);
+      controls.rotateSpeed = 4.0;
+      controls.zoomSpeed = 1.3;
+      controls.panSpeed = 0.9;
+      controls.dynamicDampingFactor = 0.15;
+      controls.noRoll = true;
+
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x6d6d6d, 0.8));
+      const dirA = new THREE.DirectionalLight(0xffffff, 0.9);
+      dirA.position.set(5, 6, 7);
+      scene.add(dirA);
+      const dirB = new THREE.DirectionalLight(0xffffff, 0.45);
+      dirB.position.set(-6, -5, -5);
+      scene.add(dirB);
+
+      const raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
+
+      let report = null;
+      let selectable = [];
+      let allMeshes = [];
+      let faceIdsAll = [];
+      let filteredFaceIds = [];
+      let selectedFaceId = null;
+      let selectedOutline = null;
+      let opacityScale = 1.0;
+      let currentModelUrl = DEFAULT_MODEL_URL;
+      let currentReportUrl = DEFAULT_REPORT_URL;
+      let modelBundles = [];
+      let visibleBundleIndices = [];
+      let loadedObject = null;
+      let selectedEdgeId = null;
+      let selectedEdgeLine = null;
+      const meshByFaceId = new Map();
+
+      function escapeHtml(v) {
+        return String(v ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function isBlankValue(v) {
+        if (v === null || v === undefined) return true;
+        if (typeof v === "string") {
+          const t = v.trim();
+          return t === "" || t === "-" || t === "[]";
+        }
+        if (Array.isArray(v)) return v.length === 0;
+        return false;
+      }
+
+      function uniqueTextList(items) {
+        const out = [];
+        const seen = new Set();
+        for (const x of Array.isArray(items) ? items : []) {
+          const t = String(x || "").trim();
+          if (!t || seen.has(t)) continue;
+          seen.add(t);
+          out.push(t);
+        }
+        return out;
+      }
+
+      function kvRowsHtml(rows) {
+        return rows
+          .filter((row) => Array.isArray(row) && row.length >= 2 && !isBlankValue(row[1]))
+          .map(([k, v]) => `<div class="k">${escapeHtml(k)}</div><div>${escapeHtml(v)}</div>`)
+          .join("");
+      }
+
+      function sortFaceIds(faceIds) {
+        return [...faceIds].sort((a, b) => {
+          const na = Number.parseInt((a || "").replace("Face", ""), 10);
+          const nb = Number.parseInt((b || "").replace("Face", ""), 10);
+          if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
+          return String(a).localeCompare(String(b));
+        });
+      }
+
+      function getFaceMeta(faceId) {
+        return report?.faces_by_id?.[faceId] || {};
+      }
+
+      function getUnitsForFace(meta) {
+        const h = report?.step_header?.units_parsed || {};
+        const hl = h.length || {};
+        const ha = h.angle || {};
+        const lengthToMRaw = Number(meta?.length_unit_to_m);
+        const angleToRadRaw = Number(meta?.angle_unit_to_rad);
+        const headerLengthToM = Number(hl.to_m);
+        const headerAngleToRad = Number(ha.to_rad);
+        return {
+          lengthSymbol: meta?.length_unit_symbol || hl.symbol || "-",
+          lengthName: meta?.length_unit_name || hl.name || "-",
+          angleSymbol: meta?.angle_unit_symbol || ha.symbol || "-",
+          angleName: meta?.angle_unit_name || ha.name || "-",
+          lengthToM:
+            Number.isFinite(lengthToMRaw) && lengthToMRaw > 0
+              ? lengthToMRaw
+              : Number.isFinite(headerLengthToM) && headerLengthToM > 0
+                ? headerLengthToM
+                : null,
+          angleToRad:
+            Number.isFinite(angleToRadRaw) && angleToRadRaw > 0
+              ? angleToRadRaw
+              : Number.isFinite(headerAngleToRad) && headerAngleToRad > 0
+                ? headerAngleToRad
+                : null,
+        };
+      }
+
+      function getSurfaceInfo(meta) {
+        const st = meta?.surface_type || "OtherSurface";
+        return SURFACE_INFO[st] || { ko: st, easy: "설명 없음", official: st };
+      }
+
+      function hexColor(num) {
+        return `#${Number(num).toString(16).padStart(6, "0")}`;
+      }
+
+      function resolveSourceColor(meta) {
+        const h = String(meta?.source_color_hex || "");
+        if (/^#[0-9A-Fa-f]{6}$/.test(h)) {
+          return Number.parseInt(h.slice(1), 16);
+        }
+        const rgb = meta?.source_color_rgb;
+        if (Array.isArray(rgb) && rgb.length >= 3) {
+          const r = Math.max(0, Math.min(255, Math.round(Number(rgb[0]) * 255)));
+          const g = Math.max(0, Math.min(255, Math.round(Number(rgb[1]) * 255)));
+          const b = Math.max(0, Math.min(255, Math.round(Number(rgb[2]) * 255)));
+          return (r << 16) | (g << 8) | b;
+        }
+        return DEFAULT_COLOR;
+      }
+
+      function sampleColorForSurface(surfaceType) {
+        for (const id of faceIdsAll) {
+          const m = getFaceMeta(id);
+          if (m.surface_type === surfaceType) return resolveSourceColor(m);
+        }
+        return DEFAULT_COLOR;
+      }
+
+      function fmtNum(v, d = 3) {
+        return Number.isFinite(v) ? Number(v).toFixed(d) : "-";
+      }
+
+      function fmtVec(v, d = 3) {
+        if (!Array.isArray(v) || v.length === 0) return "-";
+        const out = v.map((x) => (Number.isFinite(Number(x)) ? Number(x).toFixed(d) : "-"));
+        return `[${out.join(", ")}]`;
+      }
+
+      function unitSuffix(symbol, power = 1) {
+        const s = String(symbol || "").trim();
+        if (!s || s === "-") return "";
+        if (power === 2) return ` ${s}^2`;
+        return ` ${s}`;
+      }
+
+      function fmtLength(v, units, d = 3) {
+        if (!Number.isFinite(Number(v))) return "-";
+        return `${Number(v).toFixed(d)}${unitSuffix(units?.lengthSymbol, 1)}`;
+      }
+
+      function fmtLengthWithSI(v, units, d = 3) {
+        if (!Number.isFinite(Number(v))) return "-";
+        const val = Number(v);
+        const out = fmtLength(val, units, d);
+        const toM = Number(units?.lengthToM);
+        if (Number.isFinite(toM) && toM > 0) {
+          return `${out} (${(val * toM).toFixed(6)} m)`;
+        }
+        return out;
+      }
+
+      function fmtArea(v, units, d = 3) {
+        if (!Number.isFinite(Number(v))) return "-";
+        return `${Number(v).toFixed(d)}${unitSuffix(units?.lengthSymbol, 2)}`;
+      }
+
+      function fmtAreaWithSI(v, units, d = 3) {
+        if (!Number.isFinite(Number(v))) return "-";
+        const val = Number(v);
+        const out = fmtArea(val, units, d);
+        const toM = Number(units?.lengthToM);
+        if (Number.isFinite(toM) && toM > 0) {
+          return `${out} (${(val * toM * toM).toFixed(8)} m^2)`;
+        }
+        return out;
+      }
+
+      function fmtAngleWithDeg(radValue, units, d = 4) {
+        if (!Number.isFinite(Number(radValue))) return "-";
+        const rad = Number(radValue);
+        const deg = (rad * 180) / Math.PI;
+        const toRad = Number(units?.angleToRad);
+        const angleSymbol = String(units?.angleSymbol || "").trim();
+        if (Number.isFinite(toRad) && toRad > 0) {
+          const inUnit = rad / toRad;
+          if (angleSymbol.toLowerCase() === "deg") return `${inUnit.toFixed(3)} deg`;
+          return `${inUnit.toFixed(d)}${unitSuffix(angleSymbol, 1)} (${deg.toFixed(3)} deg)`;
+        }
+        return `${rad.toFixed(d)} rad (${deg.toFixed(3)} deg)`;
+      }
+
+      function fmtVecWithLengthUnit(v, units, d = 3) {
+        const raw = fmtVec(v, d);
+        if (raw === "-") return raw;
+        return `${raw}${unitSuffix(units?.lengthSymbol, 1)}`;
+      }
+
+      const THICKNESS_SOURCE_LABEL = Object.freeze({
+        SOLID_OPPOSITE_PARALLEL_FACE:
+          "OCCT:TopExp_Explorer(TopAbs_SOLID/TopAbs_FACE)+BRepAdaptor_Surface.GetType(GeomAbs_Plane)+Dot(local_z_dir)|opposite_parallel_plane_distance",
+        SOLID_PARALLEL_FACE:
+          "OCCT:TopExp_Explorer(TopAbs_SOLID/TopAbs_FACE)+BRepAdaptor_Surface.GetType(GeomAbs_Plane)+Dot(local_z_dir)|parallel_plane_distance",
+        LOCAL_FRAME_Z_SPAN: "OCCT:Geom_Surface.Position(Ax3)+edge_polyline_projection(local_z_span)",
+        GLOBAL_BBOX_MIN_DIM: "OCCT:Bnd_Box.Get(global_xyz_span_min)",
+      });
+
+      const FACE_SIZE_BASIS_LABEL = Object.freeze({
+        LOCAL_FRAME: "OCCT:Geom_Surface.Position(Ax3)+edge_polyline_projection(local_xy)",
+        GLOBAL_BBOX: "OCCT:Bnd_Box.Get(global_xyz_span)",
+      });
+
+      function normalizeThicknessSourceLabel(raw) {
+        const key = String(raw || "").trim();
+        if (!key) return "-";
+        return THICKNESS_SOURCE_LABEL[key] || key;
+      }
+
+      function normalizeFaceSizeBasisLabel(raw) {
+        const key = String(raw || "").trim();
+        if (!key) return "-";
+        return FACE_SIZE_BASIS_LABEL[key] || key;
+      }
+
+      function bboxSpan(meta) {
+        const bmin = meta?.bbox_min;
+        const bmax = meta?.bbox_max;
+        if (!Array.isArray(bmin) || !Array.isArray(bmax) || bmin.length < 3 || bmax.length < 3) return null;
+        const dx = Number(bmax[0]) - Number(bmin[0]);
+        const dy = Number(bmax[1]) - Number(bmin[1]);
+        const dz = Number(bmax[2]) - Number(bmin[2]);
+        if (![dx, dy, dz].every((x) => Number.isFinite(x))) return null;
+        return [dx, dy, dz];
+      }
+
+      function edgeLengthStats(meta) {
+        const edges = Array.isArray(meta?.edges) ? meta.edges : [];
+        let total = 0.0;
+        let count = 0;
+        for (const e of edges) {
+          const len = Number(e?.length);
+          if (!Number.isFinite(len)) continue;
+          total += len;
+          count += 1;
+        }
+        return { total, count, avg: count > 0 ? total / count : null };
+      }
+
+      function layerNoteText(note) {
+        const n = String(note || "").trim();
+        if (!n) return "레이어 없음";
+        if (n === "LAYER_NAMED") return "이름 있는 레이어";
+        if (n === "LAYER_NAME_EMPTY") return "레이어 이름 비어 있음";
+        if (n === "LAYER_NONE") return "STEP 레이어 없음";
+        return n;
+      }
+
+      function layerSummary(meta) {
+        const layerNames = Array.isArray(meta?.source_layer_names) ? meta.source_layer_names.filter((x) => String(x || "").trim()) : [];
+        if (layerNames.length > 0) {
+          return {
+            label: String(layerNames[0]),
+            detail: layerNames.length > 1 ? `면 레이어 ${layerNames.length}개` : "면 레이어",
+          };
+        }
+
+        const n = String(meta?.source_layer_name || "").trim();
+        const d = String(meta?.source_layer_description || "").trim();
+        if (n || d) {
+          return {
+            label: `${n || "(unnamed)"}${d ? ` | ${d}` : ""}`,
+            detail: "면 레이어",
+          };
+        }
+
+        const p = report?.step_header?.presentation_stats || {};
+        const samples = Array.isArray(p.layer_named_samples) ? p.layer_named_samples : [];
+        if (samples.length > 0) {
+          const first = samples[0] || {};
+          const sn = String(first.name || "").trim();
+          const sd = String(first.description || "").trim();
+          return {
+            label: `${sn || "(unnamed)"}${sd ? ` | ${sd}` : ""}`,
+            detail: `파일 레이어 ${samples.length}개`,
+          };
+        }
+
+        const total = Number(p.layer_assignment_total || 0);
+        const named = Number(p.layer_assignment_named || 0);
+        const fallbackNote =
+          meta?.source_layer_note || (total > 0 ? (named > 0 ? "LAYER_NAMED" : "LAYER_NAME_EMPTY") : "LAYER_NONE");
+        return {
+          label: layerNoteText(fallbackNote),
+          detail: `LAYER_ASSIGNMENT total=${total}, named=${named}`,
+        };
+      }
+
+      function faceLayerLabels(meta) {
+        const list = Array.isArray(meta?.source_layer_names) ? meta.source_layer_names.filter((x) => String(x || "").trim()) : [];
+        if (list.length > 0) return list.map((x) => String(x).trim());
+
+        const n = String(meta?.source_layer_name || "").trim();
+        const d = String(meta?.source_layer_description || "").trim();
+        if (n || d) return [`${n || "(unnamed)"}${d ? `|${d}` : ""}`];
+
+        const note = String(meta?.source_layer_note || "").trim();
+        if (note) {
+          if (note.startsWith("LAYER_")) return ["레이어 없음"];
+          return [layerNoteText(note)];
+        }
+        return ["레이어 없음"];
+      }
+
+      function contactPairsText(meta, units, topK = 5) {
+        const pairs = Array.isArray(meta?.contact_pairs_top) ? meta.contact_pairs_top : [];
+        if (pairs.length === 0) return "인접 정보 없음";
+        return pairs.slice(0, topK).map((p, i) => {
+          const otherFace = p?.other_face_id || "-";
+          const otherPart = p?.other_part || "-";
+          const dist = fmtLengthWithSI(p?.distance, units, 5);
+          const area = fmtAreaWithSI(p?.contact_area, units, 5);
+          const len = fmtLengthWithSI(p?.contact_length, units, 5);
+          return `${i + 1}) ${otherFace} (${otherPart}) | dist=${dist}, area=${area}, length=${len}`;
+        }).join("\n");
+      }
+
+      function compactMetaForDisplay(meta) {
+        if (!meta || typeof meta !== "object") return meta;
+        const out = { ...meta };
+        if (Array.isArray(out.edges)) {
+          out.edges = out.edges.map((e) => ({
+            edge_id: e?.edge_id,
+            index: e?.index,
+            curve_type: e?.curve_type,
+            curve_step_entity: e?.curve_step_entity,
+            length: e?.length,
+            radius: e?.radius,
+            polyline_points: Array.isArray(e?.polyline) ? e.polyline.length : 0,
+            start_point: e?.start_point,
+            mid_point: e?.mid_point,
+            end_point: e?.end_point,
+            bbox_min: e?.bbox_min,
+            bbox_max: e?.bbox_max,
+          }));
+        }
+        for (const k of ["step_advanced_face_expr", "step_surface_entity_expr", "step_surface_placement_expr"]) {
+          const v = out[k];
+          if (typeof v === "string" && v.length > 180) out[k] = `${v.slice(0, 177)}...`;
+        }
+        return out;
+      }
+
+      function edgeMixStepLabel(meta) {
+        const loopCounts = meta.edge_loop_type_counts_step_entity || {};
+        const rawCounts = meta.edge_type_counts_step_entity || {};
+        const loopEntries = Object.entries(loopCounts).sort((a, b) => Number(b[1]) - Number(a[1]));
+        const rawEntries = Object.entries(rawCounts).sort((a, b) => Number(b[1]) - Number(a[1]));
+        const loopText = loopEntries.map(([k, v]) => `${k} ${v}`).join(", ");
+        const rawText = rawEntries.map(([k, v]) => `${k} ${v}`).join(", ");
+        if (loopText && rawText) return `${loopText} (raw: ${rawText})`;
+        if (loopText) return loopText;
+        if (rawText) return rawText;
+        return "-";
+      }
+
+      function facePartLabel(meta) {
+        const primary = String(meta?.source_part_name || "").trim();
+        if (primary) return primary;
+        const names = Array.isArray(meta?.source_part_names) ? meta.source_part_names.map((x) => String(x || "").trim()).filter(Boolean) : [];
+        if (names.length > 0) return names[0];
+        return "파트 없음";
+      }
+
+      function layerLabelKey(nameRaw, descRaw, assignmentIdRaw) {
+        const n = String(nameRaw || "").trim();
+        const d = String(descRaw || "").trim();
+        const aid = String(assignmentIdRaw || "").trim();
+        return n || d ? `${n || "(unnamed)"}${d ? `|${d}` : ""}` : aid || "레이어 없음";
+      }
+
+      function inferAttachmentCountsFromTypes(typeCounts) {
+        const out = {
+          part_or_solid: 0,
+          face: 0,
+          edge_or_curve: 0,
+          styled_item: 0,
+          other: 0,
+        };
+        const isEdgeLike = (kind) => /EDGE|CURVE|POLYLINE|LINE|CIRCLE|ELLIPSE|HYPERBOLA|PARABOLA|B_SPLINE|BEZIER|VERTEX/i.test(kind);
+        for (const [k, v] of Object.entries(typeCounts || {})) {
+          const cnt = Number(v);
+          if (!k || !Number.isFinite(cnt) || cnt <= 0) continue;
+          const kind = String(k).toUpperCase();
+          const core = kind.includes("->") ? kind.split("->", 2)[1] : kind;
+          if (core.includes("MANIFOLD_SOLID_BREP") || core === "CLOSED_SHELL" || core === "OPEN_SHELL") {
+            out.part_or_solid += cnt;
+          } else if (core.includes("ADVANCED_FACE")) {
+            out.face += cnt;
+          } else if (isEdgeLike(core)) {
+            out.edge_or_curve += cnt;
+          } else if (core.includes("STYLED_ITEM")) {
+            out.styled_item += cnt;
+          } else {
+            out.other += cnt;
+          }
+        }
+        return out;
+      }
+
+      function layerAttachmentCounts(sample) {
+        const inferred = inferAttachmentCountsFromTypes(sample?.item_ref_types || {});
+        const provided = sample?.attachment_counts && typeof sample.attachment_counts === "object" ? sample.attachment_counts : {};
+        const out = {
+          part_or_solid: Math.max(Number(inferred.part_or_solid || 0), Number(provided.part_or_solid || 0)),
+          face: Math.max(Number(inferred.face || 0), Number(provided.face || 0), Number(sample?.face_ref_count || 0)),
+          edge_or_curve: Math.max(
+            Number(inferred.edge_or_curve || 0),
+            Number(provided.edge_or_curve || 0),
+            Number(sample?.edge_like_ref_count || 0),
+          ),
+          styled_item: Math.max(Number(inferred.styled_item || 0), Number(provided.styled_item || 0)),
+          other: Math.max(Number(inferred.other || 0), Number(provided.other || 0)),
+        };
+        return out;
+      }
+
+      function attachmentLabels(counts) {
+        const out = [];
+        const p = Number(counts?.part_or_solid || 0);
+        const f = Number(counts?.face || 0);
+        const e = Number(counts?.edge_or_curve || 0);
+        const o = Number(counts?.other || 0);
+        if (p > 0) out.push(`파트/솔리드 ${p}`);
+        if (f > 0) out.push(`면 ${f}`);
+        if (e > 0) out.push(`엣지/곡선 ${e}`);
+        if (o > 0) out.push(`기타 ${o}`);
+        if (out.length === 0) out.push("대상 미확인");
+        return out;
+      }
+
+      function collectLayerSamplesByLabel() {
+        const samples = Array.isArray(report?.step_header?.presentation_stats?.layer_named_samples)
+          ? report.step_header.presentation_stats.layer_named_samples
+          : [];
+        const out = new Map();
+        for (const s of samples) {
+          const key = layerLabelKey(s?.name, s?.description, s?.assignment_id);
+          if (!out.has(key)) out.set(key, []);
+          out.get(key).push(s);
+        }
+        return out;
+      }
+
+      function mergeAttachmentCounts(samples) {
+        const out = {
+          part_or_solid: 0,
+          face: 0,
+          edge_or_curve: 0,
+          styled_item: 0,
+          other: 0,
+        };
+        for (const s of Array.isArray(samples) ? samples : []) {
+          const one = layerAttachmentCounts(s);
+          for (const k of Object.keys(out)) {
+            out[k] += Number(one[k] || 0);
+          }
+        }
+        return out;
+      }
+
+      function makeFaceTitle(faceId, meta) {
+        const sInfo = getSurfaceInfo(meta);
+        return `${faceId} | ${sInfo.ko} (${meta.surface_type || "미상"})`;
+      }
+
+      function makeFaceSub(meta) {
+        const units = getUnitsForFace(meta);
+        const area = fmtArea(meta.area, units, 3);
+        const ec = Number.isFinite(meta.edge_count) ? meta.edge_count : "-";
+        const part = facePartLabel(meta);
+        const layer = faceLayerLabels(meta)[0] || layerSummary(meta).label;
+        const layerCompact = layer.length > 26 ? `${layer.slice(0, 23)}...` : layer;
+        return `파트: ${part} | 레이어: ${layerCompact} | 면적: ${area} | 엣지: ${ec}`;
+      }
+
+      function renderGlossary() {
+        const keys = Object.keys(SURFACE_INFO).sort();
+        glossaryListEl.innerHTML = "";
+        for (const key of keys) {
+          const info = SURFACE_INFO[key];
+          const div = document.createElement("div");
+          div.className = "glossary-item";
+          div.innerHTML = `
+            <div class="g-title">${escapeHtml(info.ko)} <span class="small">(${escapeHtml(key)})</span></div>
+            <div class="g-official">${escapeHtml(info.official)}</div>
+          `;
+          glossaryListEl.appendChild(div);
+        }
+      }
+
+      function resolveFaceIdFromNode(node) {
+        let cur = node;
+        while (cur) {
+          const nm = cur.name || "";
+          if (nm.startsWith("Face")) return nm;
+          cur = cur.parent || null;
+        }
+        return "";
+      }
+
+      function renderHumanSignals() {
+        const p = report?.step_header?.presentation_stats || {};
+        const u = report?.step_header?.units_parsed || {};
+        const ul = u?.length || {};
+        const ua = u?.angle || {};
+        const samples = Array.isArray(p.layer_named_samples) ? p.layer_named_samples : [];
+        let faceLinkedLayers = 0;
+        let partLinkedLayers = 0;
+        let edgeLinkedLayers = 0;
+        let edgeRefTotal = 0;
+        for (const s of samples) {
+          const counts = layerAttachmentCounts(s);
+          if (Number(counts.face || 0) > 0 || Number(s?.face_ref_count || 0) > 0) faceLinkedLayers += 1;
+          if (Number(counts.part_or_solid || 0) > 0 || (Array.isArray(s?.manifold_names) && s.manifold_names.length > 0)) {
+            partLinkedLayers += 1;
+          }
+          if (Number(counts.edge_or_curve || 0) > 0 || Number(s?.edge_like_ref_count || 0) > 0) edgeLinkedLayers += 1;
+          edgeRefTotal += Number(s?.edge_like_ref_count || 0);
+        }
+        humanSignalsEl.innerHTML = `
+          <div class="human-block">
+            <div class="human-title">요약</div>
+            <div class="human-text">단위: 길이 ${escapeHtml(ul.symbol || "-")} (${escapeHtml(ul.name || "-")}), 각도 ${escapeHtml(ua.symbol || "-")} (${escapeHtml(ua.name || "-")})</div>
+            <div class="chip-row">
+              <span class="mini-chip">레이어 할당 ${escapeHtml(p.layer_assignment_total ?? 0)}</span>
+              <span class="mini-chip good">이름 있는 레이어 ${escapeHtml(p.layer_assignment_named ?? 0)}</span>
+              <span class="mini-chip good">면 연결 레이어 ${escapeHtml(faceLinkedLayers)}</span>
+              <span class="mini-chip warn">파트/솔리드 연결 레이어 ${escapeHtml(partLinkedLayers)}</span>
+              <span class="mini-chip warn">엣지/곡선 연결 레이어 ${escapeHtml(edgeLinkedLayers)}</span>
+            </div>
+            <div class="chip-row">
+              <span class="mini-chip">면 레이어 매핑 ${escapeHtml(p.face_layer_mapped_total ?? 0)}</span>
+              <span class="mini-chip">면→파트 매핑 ${escapeHtml(p.face_part_mapped_total ?? 0)}</span>
+              <span class="mini-chip">다중 파트 후보 ${escapeHtml(p.face_part_multi_candidate_total ?? 0)}</span>
+              <span class="mini-chip">색상 매핑 ${escapeHtml(p.face_color_hit_from_xcaf ?? 0)}/${escapeHtml(p.face_color_total_from_xcaf ?? 0)}</span>
+              <span class="mini-chip">엣지/곡선 참조 ${escapeHtml(edgeRefTotal)}</span>
+            </div>
+            <div class="chip-row">
+              <span class="mini-chip">COLOUR_RGB ${escapeHtml(p.colour_rgb_total ?? 0)}</span>
+              <span class="mini-chip">STYLED_ITEM ${escapeHtml(p.styled_item_total ?? 0)}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderLayerMap() {
+        if (!layerMapEl) return;
+        layerMapEl.innerHTML = "";
+
+        const newBucket = () => ({
+          faceCount: 0,
+          faces: [],
+          parts: new Set(),
+          assignmentIds: new Set(),
+          refIds: new Set(),
+          refTypeCounts: new Map(),
+          edgeLikeRefs: new Set(),
+          manifoldNames: new Set(),
+          attachmentCounts: {
+            part_or_solid: 0,
+            face: 0,
+            edge_or_curve: 0,
+            styled_item: 0,
+            other: 0,
+          },
+        });
+        const mergeLayerSample = (row, sample) => {
+          const assignmentId = String(sample?.assignment_id || "").trim();
+          if (assignmentId) row.assignmentIds.add(assignmentId);
+
+          const refsSample = Array.isArray(sample?.item_refs_sample) ? sample.item_refs_sample : [];
+          for (const rid of refsSample) {
+            if (rid) row.refIds.add(String(rid));
+          }
+
+          const manifoldNames = Array.isArray(sample?.manifold_names) ? sample.manifold_names : [];
+          for (const name of manifoldNames) {
+            const t = String(name || "").trim();
+            if (t) row.manifoldNames.add(t);
+          }
+
+          const edgeRefs = Array.isArray(sample?.edge_like_ref_ids) ? sample.edge_like_ref_ids : [];
+          for (const rid of edgeRefs) {
+            if (!rid) continue;
+            const v = String(rid);
+            row.edgeLikeRefs.add(v);
+            row.refIds.add(v);
+          }
+
+          const typeCounts = sample?.item_ref_types && typeof sample.item_ref_types === "object" ? sample.item_ref_types : {};
+          for (const [k, v] of Object.entries(typeCounts)) {
+            const cnt = Number(v);
+            if (!k || !Number.isFinite(cnt)) continue;
+            row.refTypeCounts.set(k, Number(row.refTypeCounts.get(k) || 0) + cnt);
+          }
+
+          const attachment = layerAttachmentCounts(sample);
+          for (const key of Object.keys(row.attachmentCounts)) {
+            row.attachmentCounts[key] = Number(row.attachmentCounts[key] || 0) + Number(attachment[key] || 0);
+          }
+        };
+
+        const sampleByLabel = collectLayerSamplesByLabel();
+        const normalizeLabel = (labelRaw) => {
+          const label = String(labelRaw || "").trim();
+          if (!label) return "레이어 없음";
+          if (label.startsWith("No layer")) return "레이어 없음";
+          return label;
+        };
+
+        const buckets = new Map();
+        for (const faceId of faceIdsAll) {
+          const meta = getFaceMeta(faceId);
+          const labels = faceLayerLabels(meta);
+          const part = facePartLabel(meta);
+          const assignIds = Array.isArray(meta?.source_layer_assignment_ids) ? meta.source_layer_assignment_ids : [];
+          const refIds = Array.isArray(meta?.source_layer_ref_ids) ? meta.source_layer_ref_ids : [];
+          for (const labelRaw of labels) {
+            const label = normalizeLabel(labelRaw);
+            if (!buckets.has(label)) {
+              buckets.set(label, newBucket());
+            }
+            const row = buckets.get(label);
+            row.faceCount += 1;
+            if (row.faces.length < 12) row.faces.push(faceId);
+            if (part) row.parts.add(part);
+            for (const aid of assignIds) {
+              if (aid) row.assignmentIds.add(String(aid));
+            }
+            for (const rid of refIds) {
+              if (rid) row.refIds.add(String(rid));
+            }
+          }
+        }
+
+        for (const [labelRaw, sampleList] of sampleByLabel.entries()) {
+          const label = normalizeLabel(labelRaw);
+          if (!buckets.has(label)) {
+            buckets.set(label, newBucket());
+          }
+          const row = buckets.get(label);
+          for (const s of sampleList) {
+            mergeLayerSample(row, s);
+          }
+        }
+
+        const q = String(layerMapSearchEl?.value || "").trim().toLowerCase();
+        let entries = [...buckets.entries()].sort(
+          (a, b) => Number(b[1].faceCount) - Number(a[1].faceCount) || a[0].localeCompare(b[0]),
+        );
+        if (q) {
+          entries = entries.filter(([label, row]) => {
+            const attachLabels = attachmentLabels(row.attachmentCounts);
+            const bag = [
+              label,
+              ...row.assignmentIds,
+              ...row.refIds,
+              ...row.edgeLikeRefs,
+              ...row.manifoldNames,
+              ...row.parts,
+              ...attachLabels,
+              ...[...row.refTypeCounts.entries()].map(([k, v]) => `${k}:${v}`),
+            ]
+              .join(" ")
+              .toLowerCase();
+            return bag.includes(q);
+          });
+        }
+        if (entries.length === 0) {
+          layerMapEl.textContent = q ? "검색 결과 없음" : "레이어 메타데이터 없음";
+          return;
+        }
+
+        for (const [label, row] of entries) {
+          const box = document.createElement("div");
+          box.className = "card layer-row";
+
+          const head = document.createElement("div");
+          head.className = "layer-head";
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "layer-apply";
+          btn.textContent = `${label}`;
+          btn.title = "레이어 필터 적용";
+          btn.onclick = () => {
+            if ([...layerFilterEl.options].some((o) => o.value === label)) {
+              layerFilterEl.value = label;
+              applyFilters();
+            }
+          };
+          head.appendChild(btn);
+
+          const quick = document.createElement("div");
+          quick.className = "layer-quick";
+          quick.textContent = `면 ${row.faceCount} | 파트 ${row.parts.size} | 할당 ${row.assignmentIds.size}`;
+          head.appendChild(quick);
+          box.appendChild(head);
+
+          const chips = document.createElement("div");
+          chips.className = "chip-row";
+          const attachList = attachmentLabels(row.attachmentCounts);
+          for (const tag of attachList) {
+            const chip = document.createElement("span");
+            const isGood = tag.startsWith("면") || tag.startsWith("파트/솔리드");
+            const isWarn = tag.startsWith("엣지/곡선");
+            chip.className = `mini-chip${isGood ? " good" : isWarn ? " warn" : ""}`;
+            chip.textContent = tag;
+            chips.appendChild(chip);
+          }
+          if (row.edgeLikeRefs.size > 0) {
+            const edgeChip = document.createElement("span");
+            edgeChip.className = "mini-chip warn";
+            edgeChip.textContent = `엣지/곡선 참조 ${row.edgeLikeRefs.size}`;
+            chips.appendChild(edgeChip);
+          }
+          box.appendChild(chips);
+
+          const partList = [...row.parts].slice(0, 8).join(", ") || "-";
+          const faceList = row.faces.slice(0, 12).join(", ") || "-";
+          const aidList = [...row.assignmentIds].slice(0, 12).join(", ") || "-";
+          const ridList = [...row.refIds].slice(0, 14).join(", ") || "-";
+          const edgeRefList = [...row.edgeLikeRefs].slice(0, 12).join(", ") || "-";
+          const manifoldList = [...row.manifoldNames].slice(0, 10).join(", ") || "-";
+          const refTypeText = [...row.refTypeCounts.entries()]
+            .sort((a, b) => Number(b[1]) - Number(a[1]) || String(a[0]).localeCompare(String(b[0])))
+            .map(([k, v]) => `${k}:${v}`)
+            .slice(0, 10)
+            .join(", ") || "-";
+
+          const details = document.createElement("details");
+          details.className = "layer-more";
+          details.open = false;
+          const summary = document.createElement("summary");
+          summary.textContent = "상세";
+          details.appendChild(summary);
+
+          const line1 = document.createElement("div");
+          line1.className = "layer-line";
+          line1.textContent = `파트(샘플): ${partList}`;
+          details.appendChild(line1);
+
+          const line2 = document.createElement("div");
+          line2.className = "layer-line";
+          line2.textContent = `면(샘플): ${faceList}`;
+          details.appendChild(line2);
+
+          const line3 = document.createElement("div");
+          line3.className = "layer-line";
+          line3.textContent = `Solid 이름(샘플): ${manifoldList}`;
+          details.appendChild(line3);
+
+          const line4 = document.createElement("div");
+          line4.className = "layer-line";
+          line4.textContent = `레이어 할당 ID: ${aidList}`;
+          details.appendChild(line4);
+
+          const line5 = document.createElement("div");
+          line5.className = "layer-line";
+          line5.textContent = `STEP 참조(샘플): ${ridList}`;
+          details.appendChild(line5);
+
+          const line6 = document.createElement("div");
+          line6.className = "layer-line";
+          line6.textContent = `참조 타입: ${refTypeText}`;
+          details.appendChild(line6);
+
+          const line7 = document.createElement("div");
+          line7.className = "layer-line";
+          line7.textContent = `엣지/곡선 참조(샘플): ${edgeRefList}`;
+          details.appendChild(line7);
+
+          const line8 = document.createElement("div");
+          line8.className = "layer-line";
+          line8.textContent = `부착 대상: ${attachmentLabels(row.attachmentCounts).join(", ")}`;
+          details.appendChild(line8);
+
+          box.appendChild(details);
+
+          layerMapEl.appendChild(box);
+        }
+      }
+
+      function resize() {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        if (typeof controls.handleResize === "function") controls.handleResize();
+      }
+      window.addEventListener("resize", resize);
+
+      function clearOutline() {
+        if (!selectedOutline) return;
+        if (selectedOutline.parent) selectedOutline.parent.remove(selectedOutline);
+        selectedOutline.geometry.dispose();
+        selectedOutline.material.dispose();
+        selectedOutline = null;
+      }
+
+      function clearEdgeOverlay() {
+        if (!selectedEdgeLine) return;
+        scene.remove(selectedEdgeLine);
+        selectedEdgeLine.geometry.dispose();
+        selectedEdgeLine.material.dispose();
+        selectedEdgeLine = null;
+      }
+
+      function drawEdgeOverlay(points) {
+        clearEdgeOverlay();
+        if (!Array.isArray(points) || points.length < 2) return;
+        const arr = [];
+        for (const p of points) {
+          if (!Array.isArray(p) || p.length < 3) continue;
+          arr.push(Number(p[0]) || 0, Number(p[1]) || 0, Number(p[2]) || 0);
+        }
+        if (arr.length < 6) return;
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(arr, 3));
+        const mat = new THREE.LineBasicMaterial({
+          color: 0xff5a00,
+          transparent: true,
+          opacity: 0.98,
+          depthTest: false,
+        });
+        selectedEdgeLine = new THREE.Line(geom, mat);
+        selectedEdgeLine.renderOrder = 50;
+        scene.add(selectedEdgeLine);
+      }
+
+      function addOutline(mesh) {
+        clearOutline();
+        if (!mesh) return;
+        const edgeGeom = new THREE.EdgesGeometry(mesh.geometry, 30);
+        const edgeMat = new THREE.LineBasicMaterial({ color: 0x111111 });
+        selectedOutline = new THREE.LineSegments(edgeGeom, edgeMat);
+        selectedOutline.renderOrder = 2;
+        mesh.add(selectedOutline);
+      }
+
+      function scaledOpacity(v) {
+        return Math.max(0.01, Math.min(0.98, Number(v) * opacityScale));
+      }
+
+      function updateOpacityScaleLabel() {
+        opacityScaleValueEl.textContent = `${opacityScale.toFixed(2)}x`;
+      }
+
+      function updateMeshStyles() {
+        const isolate = isolateEl.checked;
+        for (const mesh of allMeshes) {
+          const mat = mesh.material;
+          const baseColor = mesh.userData.baseColor ?? 0x8ea0a8;
+          const isSelectable = Boolean(mesh.userData.isSelectable);
+          const isSelected = selectedFaceId && mesh.name === selectedFaceId;
+          if (!mesh.visible) continue;
+
+          if (!selectedFaceId) {
+            mat.color.setHex(baseColor);
+            mat.opacity = scaledOpacity(0.92);
+            mat.transparent = true;
+            mat.depthWrite = false;
+            mat.emissive.setHex(0x000000);
+            continue;
+          }
+
+          if (isSelectable && isSelected) {
+            mat.color.setHex(baseColor);
+            mat.opacity = scaledOpacity(isolate ? 0.88 : 0.92);
+            mat.transparent = true;
+            mat.depthWrite = false;
+            mat.emissive.setHex(0x292929);
+          } else {
+            mat.color.setHex(isolate ? 0xb7beb7 : baseColor);
+            mat.opacity = scaledOpacity(isolate ? 0.03 : 0.20);
+            mat.transparent = true;
+            mat.depthWrite = false;
+            mat.emissive.setHex(0x000000);
+          }
+        }
+      }
+
+      function renderSelectedSummary(faceId, meta) {
+        const sInfo = getSurfaceInfo(meta);
+        const mesh = meshForFace(faceId);
+        const renderHex = mesh?.material?.color ? `#${mesh.material.color.getHexString().toUpperCase()}` : "-";
+        const sourceHex = meta.source_color_hex || "-";
+        const sourceTag = meta.source_color_source || "-";
+        const partLabel = facePartLabel(meta);
+        const partRaw = String(meta.source_part_name_raw || "").trim();
+        const partAliases = uniqueTextList(meta.source_part_names).filter((x) => x !== partLabel && x !== partRaw);
+        const layer = layerSummary(meta);
+        const layerLabels = uniqueTextList(faceLayerLabels(meta)).filter((x) => x !== "레이어 없음");
+        const layerLabelsAll = layerLabels.length > 0 ? layerLabels.join(", ") : "레이어 없음";
+        const layerAssignmentIdsArr =
+          Array.isArray(meta?.source_layer_assignment_ids) && meta.source_layer_assignment_ids.length > 0 ? meta.source_layer_assignment_ids : [];
+        const layerRefIdsArr = Array.isArray(meta?.source_layer_ref_ids) && meta.source_layer_ref_ids.length > 0 ? meta.source_layer_ref_ids : [];
+        const layerAssignmentIds = layerAssignmentIdsArr.length > 0 ? layerAssignmentIdsArr.join(", ") : "";
+        const layerRefIds = layerRefIdsArr.length > 0 ? layerRefIdsArr.slice(0, 12).join(", ") : "";
+        const layerBindLevel = layerAssignmentIdsArr.length > 0 ? "면" : layerNoteText(meta.source_layer_note || "");
+        const layerSamples = collectLayerSamplesByLabel();
+        const layerAttachHint = uniqueTextList(
+          layerLabels.slice(0, 4).map((labelName) => {
+            const samplesForLabel = layerSamples.get(labelName);
+            if (!samplesForLabel) return "면";
+            return attachmentLabels(mergeAttachmentCounts(samplesForLabel)).join(", ");
+          }),
+        ).join(" / ");
+
+        const stepAdvRaw = String(meta.step_advanced_face_id || "").trim();
+        const stepSrefRaw = String(meta.step_surface_ref_id || "").trim();
+        const stepPlaceRefRaw = String(meta.step_surface_placement_ref_id || "").trim();
+        const stepAdv = stepAdvRaw || "-";
+        const stepSref = stepSrefRaw || "-";
+        const stepPlaceRef = stepPlaceRefRaw || "-";
+        const stepSurfaceType = meta.surface_step_entity || "-";
+        const stepShellId = String(meta.step_shell_id || "").trim();
+        const stepShellType = String(meta.step_shell_entity_raw || "").trim();
+        const stepManifoldId = String(meta.step_manifold_solid_brep_id || "").trim();
+        const stepManifoldName = String(meta.step_manifold_solid_brep_name || "").trim();
+        const stepCandidateIdsArr = uniqueTextList(meta.step_candidate_advanced_face_ids);
+        const stepCandidateIds = stepCandidateIdsArr.join(", ");
+        const stepCandidateCountNum = Number(meta.step_candidate_count);
+        const stepCandidateLabel =
+          stepCandidateIdsArr.length > 0
+            ? `${stepCandidateIds}${Number.isFinite(stepCandidateCountNum) && stepCandidateCountNum > stepCandidateIdsArr.length ? ` ... (총 ${stepCandidateCountNum})` : ""}`
+            : "";
+        const stepTransferSurfaceType = String(meta.step_transfer_surface_entity_raw || "").trim();
+        const stepMappingRaw = String(meta.step_ref_mapping || "").trim();
+        const stepMappingText =
+          stepMappingRaw === "ORDER_BASED_MISMATCH_SURFACE_TYPE"
+            ? "순서 기반 STEP 매핑 불일치(표면 타입 충돌)"
+            : stepMappingRaw === "TRANSFER_SIGNATURE_MATCH"
+              ? "전이 엔티티 시그니처 매핑"
+              : stepMappingRaw === "TRANSFER_SIGNATURE_AMBIGUOUS"
+                ? "전이 엔티티 시그니처 후보 다수(모호)"
+            : stepMappingRaw === "ORDER_BASED_BEST_EFFORT"
+              ? "순서 기반 STEP 매핑(추정)"
+              : stepMappingRaw || "-";
+        const stepHierarchyRaw = String(meta.step_entity_hierarchy || "").trim();
+        const stepHierarchy =
+          stepHierarchyRaw ||
+          [
+            stepManifoldId ? `${stepManifoldId} MANIFOLD_SOLID_BREP${stepManifoldName ? `('${stepManifoldName}')` : ""}` : "",
+            stepShellId ? `${stepShellId} ${stepShellType}`.trim() : "",
+            stepAdvRaw ? `${stepAdvRaw} ADVANCED_FACE` : "",
+            stepSrefRaw ? `${stepSrefRaw} ${stepSurfaceType || ""}`.trim() : "",
+            stepPlaceRefRaw ? `${stepPlaceRefRaw}` : "",
+          ]
+            .filter(Boolean)
+            .join(" -> ");
+        const solidIdsArr = uniqueTextList(meta.source_solid_ids);
+        const solidId = String(meta.source_solid_id || "").trim() || (solidIdsArr.length > 0 ? solidIdsArr[0] : "");
+        const solidIds = solidIdsArr.join(", ");
+        const solidCountNum = Number(meta.source_solid_count);
+        const solidCount = Number.isFinite(solidCountNum) ? String(solidCountNum) : "";
+        const partCandidateCountNum = Number(meta.source_part_candidate_count);
+        const partCandidateCount = Number.isFinite(partCandidateCountNum) ? String(partCandidateCountNum) : "";
+        const hasExtendedMapping = Boolean(
+          Number.isFinite(solidCountNum) ||
+            Number.isFinite(partCandidateCountNum) ||
+            (Array.isArray(meta.source_solid_ids) && meta.source_solid_ids.length > 0) ||
+            meta.source_solid_id ||
+            meta.step_manifold_solid_brep_id ||
+            meta.step_shell_id ||
+            meta.step_entity_hierarchy,
+        );
+
+        const units = getUnitsForFace(meta);
+        const areaText = fmtAreaWithSI(meta.area, units, 4);
+        const edgeCount = Number.isFinite(meta.edge_count) ? String(meta.edge_count) : "-";
+        const com = fmtVecWithLengthUnit(meta.center_of_mass, units, 4);
+        const bboxSize = bboxSpan(meta);
+        const bboxSizeText = bboxSize ? fmtVecWithLengthUnit(bboxSize, units, 4) : "-";
+        const stepSolidText = stepManifoldId ? `${stepManifoldId}${stepManifoldName ? ` (${stepManifoldName})` : ""}` : "";
+        const solidChip = stepSolidText || solidId;
+        const faceLength = fmtLengthWithSI(meta.face_length, units, 4);
+        const faceWidth = fmtLengthWithSI(meta.face_width, units, 4);
+        const faceThickness = fmtLengthWithSI(meta.face_thickness_est, units, 4);
+        const faceThicknessSource = normalizeThicknessSourceLabel(meta.face_thickness_source);
+        const faceSizeBasis = normalizeFaceSizeBasisLabel(meta.face_size_basis);
+        const faceSpanLocal = fmtVecWithLengthUnit(meta.face_span_local_xyz, units, 4);
+        const faceSpanGlobal = fmtVecWithLengthUnit(meta.face_span_global_xyz, units, 4);
+        const surfaceTypeRaw = String(meta.surface_type || "");
+        const isPlanarFace = surfaceTypeRaw === "Plane";
+        const cylindricalLike = Boolean(meta.cylindrical_like) || surfaceTypeRaw === "Cylinder";
+        const cylModeRaw = String(meta.cylindrical_mode || "").trim();
+        const cylMode =
+          cylModeRaw === "EXACT_CYLINDER"
+            ? "원통면 직접"
+            : cylModeRaw === "INFERRED_FROM_CIRCLE_EDGES"
+              ? "원형 엣지 기반 추정"
+              : "";
+        const cylRadius = fmtLengthWithSI(meta.cyl_radius_est, units, 4);
+        const cylDiameter = fmtLengthWithSI(meta.cyl_diameter_est, units, 4);
+        const cylHeight = fmtLengthWithSI(meta.cyl_height_est, units, 4);
+        const cylArcLen = fmtLengthWithSI(meta.cyl_arc_length_est, units, 4);
+        const cylCircumference = fmtLengthWithSI(meta.cyl_circumference_est, units, 4);
+        const cylSweep = fmtAngleWithDeg(meta.cyl_sweep_angle_rad_est, units, 4);
+        const cylAxisDir = fmtVec(meta.cyl_axis_direction_est, 4);
+        const cylAxisOrigin = fmtVecWithLengthUnit(meta.cyl_axis_origin_est, units, 4);
+        const cylCircleEdgeCount = Number.isFinite(Number(meta.cyl_circle_edge_count)) ? String(Number(meta.cyl_circle_edge_count)) : "";
+        const cylMetricSource = String(meta.cyl_metric_source || "").trim();
+
+        const chipRows = [
+          ["파트", partLabel],
+          ["솔리드", solidChip],
+          ["레이어", layer.label],
+          ["원본 색상", sourceHex],
+          ["렌더 색상", renderHex],
+        ]
+          .filter((x) => !isBlankValue(x[1]))
+          .map(([k, v]) => `<div class="selected-chip"><span class="k">${escapeHtml(k)}</span>${escapeHtml(v)}</div>`)
+          .join("");
+
+        const mappingRows = kvRowsHtml([
+          ["면 ID", faceId],
+          ["파트", partLabel],
+          ["파트 원본명", partRaw && partRaw !== partLabel ? partRaw : ""],
+          ["파트 별칭", partAliases.length > 0 ? partAliases.join(", ") : ""],
+          ["파트 후보 수", partCandidateCountNum > 1 ? partCandidateCount : ""],
+          ["STEP 솔리드", stepSolidText],
+          ["STEP SHELL", stepShellId ? `${stepShellId}${stepShellType ? ` (${stepShellType})` : ""}` : ""],
+          ["STEP 계층", stepHierarchy],
+          ["STEP 매핑", stepMappingText],
+          ["전이 표면 타입", stepTransferSurfaceType],
+          ["STEP 후보 ADV_FACE", stepCandidateLabel],
+          ["OCCT 소속 솔리드", solidId],
+          ["소속 솔리드 수", solidCount],
+          ["소속 솔리드 목록", solidIdsArr.length > 1 ? solidIds : ""],
+          ["레이어 이름", layerLabelsAll],
+          ["레이어 부착 대상", layerAttachHint],
+          ["레이어 바인딩", layerBindLevel],
+          ["레이어 할당 ID", layerAssignmentIds],
+          ["STEP 참조 ID", layerRefIds],
+          ["STEP ADVANCED_FACE", stepAdv],
+          ["STEP SURFACE", stepSref],
+          ["STEP PLACEMENT", stepPlaceRef],
+          ["색상 소스", sourceTag],
+          ["표면 타입", `${meta.surface_type || "-"} (${stepSurfaceType})`],
+        ]);
+
+        let geometryRows = "";
+        if (isPlanarFace) {
+          geometryRows = kvRowsHtml([
+            ["면적", areaText],
+            ["길이", faceLength],
+            ["폭", faceWidth],
+            ["두께(추정)", faceThickness],
+            ["두께 산출", faceThicknessSource],
+            ["치수 기준", faceSizeBasis],
+            ["로컬 span(x,y,z)", faceSpanLocal],
+            ["글로벌 span(x,y,z)", faceSpanGlobal],
+            ["엣지 수", edgeCount],
+            ["중심점", com],
+            ["BBox 크기", bboxSizeText],
+          ]);
+        } else if (cylindricalLike) {
+          geometryRows = kvRowsHtml([
+            ["면적", areaText],
+            ["반지름(추정)", cylRadius],
+            ["지름(추정)", cylDiameter],
+            ["높이(축방향 추정)", cylHeight],
+            ["전개 호길이(추정)", cylArcLen],
+            ["전개 각도(추정)", cylSweep],
+            ["기준 원주", cylCircumference],
+            ["원통 판정", cylMode],
+            ["원형 엣지 수", cylCircleEdgeCount],
+            ["원통 축 방향", cylAxisDir],
+            ["원통 축 기준점", cylAxisOrigin],
+            ["원통 지표 소스", cylMetricSource],
+            ["로컬 span(x,y,z)", faceSpanLocal],
+            ["글로벌 span(x,y,z)", faceSpanGlobal],
+            ["엣지 수", edgeCount],
+            ["중심점", com],
+            ["BBox 크기", bboxSizeText],
+          ]);
+        } else {
+          geometryRows = kvRowsHtml([
+            ["면적", areaText],
+            ["로컬 span(x,y,z)", faceSpanLocal],
+            ["글로벌 span(x,y,z)", faceSpanGlobal],
+            ["엣지 수", edgeCount],
+            ["중심점", com],
+            ["BBox 크기", bboxSizeText],
+          ]);
+        }
+
+        selectedSummaryEl.innerHTML = `
+          <div class="selected-title">${escapeHtml(faceId)} | ${escapeHtml(sInfo.ko)} <span class="small">(${escapeHtml(meta.surface_type || "미상")})</span></div>
+          <div class="selected-top">${chipRows}</div>
+
+          <div class="selected-section">
+            <div class="s-title">매핑 정보</div>
+            <div class="selected-kv compact">${mappingRows}</div>
+            ${hasExtendedMapping ? "" : `<div class="state-note">현재 로드된 리포트에는 솔리드/파트 후보 확장 필드가 없습니다. 최신 파싱 결과를 선택하세요.</div>`}
+          </div>
+
+          <details class="card" style="margin-top:8px;">
+            <summary>기하 정보</summary>
+            <div class="selected-kv compact">${geometryRows}</div>
+          </details>
+        `;
+      }
+
+      function renderNoSelection() {
+        selectedSummaryEl.textContent = "선택 없음";
+        metaEl.textContent = "{}";
+        edgeListEl.textContent = "선택 없음";
+        selectedEdgeId = null;
+        clearEdgeOverlay();
+        for (const li of document.querySelectorAll("#face-list li")) {
+          li.classList.remove("active");
+        }
+      }
+
+      function renderEdgeList(meta) {
+        const edges = Array.isArray(meta?.edges) ? meta.edges : [];
+        const units = getUnitsForFace(meta);
+        edgeListEl.innerHTML = "";
+        if (edges.length === 0) {
+          edgeListEl.textContent = "엣지 데이터 없음";
+          selectedEdgeId = null;
+          clearEdgeOverlay();
+          return;
+        }
+
+        for (const e of edges) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "edge-row";
+          btn.dataset.edgeId = String(e.edge_id || "");
+          const len = fmtLength(e.length, units, 4);
+          const rad = Number.isFinite(Number(e.radius)) ? ` | R=${fmtLength(e.radius, units, 4)}` : "";
+          const step = e.curve_step_entity || e.curve_type || "미상";
+          const sp = fmtVecWithLengthUnit(e.start_point, units, 3);
+          const ep = fmtVecWithLengthUnit(e.end_point, units, 3);
+          const mp = fmtVecWithLengthUnit(e.mid_point, units, 3);
+          const pc = Number.isFinite(Number(e.polyline_point_count)) ? String(e.polyline_point_count) : "-";
+          btn.innerHTML = `
+            <span class="e-main">${escapeHtml(e.edge_id || "-")} | ${escapeHtml(step)}</span>
+            <span class="e-sub">L=${escapeHtml(len)}${escapeHtml(rad)} | pts=${escapeHtml(pc)}</span>
+            <span class="e-sub">S=${escapeHtml(sp)} | M=${escapeHtml(mp)} | E=${escapeHtml(ep)}</span>
+          `;
+          btn.title = `start=${sp}\nmid=${mp}\nend=${ep}`;
+          btn.onclick = () => {
+            selectedEdgeId = e.edge_id || null;
+            drawEdgeOverlay(e.polyline || []);
+            for (const x of edgeListEl.querySelectorAll(".edge-row")) {
+              x.classList.toggle("active", x.dataset.edgeId === selectedEdgeId);
+            }
+          };
+          edgeListEl.appendChild(btn);
+        }
+      }
+
+      function showMetadata(faceId) {
+        const meta = getFaceMeta(faceId);
+        renderSelectedSummary(faceId, meta);
+        renderEdgeList(meta);
+        metaEl.textContent = JSON.stringify(compactMetaForDisplay(meta), null, 2);
+
+        for (const details of faceListEl.querySelectorAll("details.face-group")) {
+          const has = Boolean(details.querySelector(`li[data-face-id="${faceId}"]`));
+          if (has) details.open = true;
+        }
+
+        for (const li of document.querySelectorAll("#face-list li")) {
+          li.classList.toggle("active", li.dataset.faceId === faceId);
+        }
+      }
+
+      function clearSelection() {
+        selectedFaceId = null;
+        clearOutline();
+        selectedEdgeId = null;
+        clearEdgeOverlay();
+        updateMeshStyles();
+        renderNoSelection();
+      }
+
+      function meshForFace(faceId) {
+        return selectable.find((m) => m.name === faceId && m.visible) || meshByFaceId.get(faceId) || null;
+      }
+
+      function selectFace(faceId) {
+        if (!faceId) return;
+        const mesh = meshForFace(faceId);
+        if (!mesh) return;
+        if (selectedFaceId === faceId) {
+          clearSelection();
+          return;
+        }
+        selectedFaceId = faceId;
+        selectedEdgeId = null;
+        clearEdgeOverlay();
+        updateMeshStyles();
+        addOutline(mesh);
+        showMetadata(faceId);
+      }
+
+      function selectAdjacentFace(step) {
+        if (filteredFaceIds.length === 0) return;
+        const idx = Math.max(filteredFaceIds.indexOf(selectedFaceId), 0);
+        const nextIdx = (idx + step + filteredFaceIds.length) % filteredFaceIds.length;
+        selectFace(filteredFaceIds[nextIdx]);
+      }
+
+      function fitCameraToMesh(mesh) {
+        if (!mesh) return;
+        const box = new THREE.Box3().setFromObject(mesh);
+        const size = new THREE.Vector3();
+        const center = new THREE.Vector3();
+        box.getSize(size);
+        box.getCenter(center);
+
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const dir = new THREE.Vector3().subVectors(camera.position, controls.target);
+        if (dir.lengthSq() < 1e-12) dir.set(1, 1, 1);
+        dir.normalize();
+
+        controls.target.copy(center);
+        camera.position.copy(center).addScaledVector(dir, maxDim * 2.8);
+        camera.near = Math.max(maxDim / 500, 0.001);
+        camera.far = Math.max(maxDim * 200, 1000);
+        camera.updateProjectionMatrix();
+      }
+
+      function buildFaceListItem(faceId) {
+        const meta = getFaceMeta(faceId);
+        const li = document.createElement("li");
+        li.dataset.faceId = faceId;
+
+        const title = document.createElement("div");
+        title.className = "title";
+
+        const swatch = document.createElement("span");
+        swatch.className = "swatch";
+        swatch.style.backgroundColor = hexColor(resolveSourceColor(meta));
+        title.appendChild(swatch);
+
+        const titleText = document.createElement("span");
+        titleText.textContent = makeFaceTitle(faceId, meta);
+        title.appendChild(titleText);
+        li.appendChild(title);
+
+        const sub = document.createElement("div");
+        sub.className = "sub";
+        sub.textContent = makeFaceSub(meta);
+        li.appendChild(sub);
+
+        li.onclick = () => selectFace(faceId);
+        return li;
+      }
+
+      function rebuildFaceList(faceIds) {
+        faceListEl.innerHTML = "";
+        if (!groupFaceListEl.checked) {
+          for (const faceId of faceIds) {
+            faceListEl.appendChild(buildFaceListItem(faceId));
+          }
+          return;
+        }
+
+        const groups = new Map();
+        for (const faceId of faceIds) {
+          const part = facePartLabel(getFaceMeta(faceId));
+          if (!groups.has(part)) groups.set(part, []);
+          groups.get(part).push(faceId);
+        }
+
+        const partNames = [...groups.keys()].sort((a, b) => String(a).localeCompare(String(b)));
+        for (const partName of partNames) {
+          const ids = groups.get(partName) || [];
+          const details = document.createElement("details");
+          details.className = "face-group";
+          details.open = selectedFaceId ? ids.includes(selectedFaceId) : false;
+
+          const summary = document.createElement("summary");
+          summary.textContent = `${partName} (${ids.length})`;
+          details.appendChild(summary);
+
+          const ul = document.createElement("ul");
+          ul.className = "group-face-list";
+          for (const faceId of ids) {
+            ul.appendChild(buildFaceListItem(faceId));
+          }
+          details.appendChild(ul);
+          faceListEl.appendChild(details);
+        }
+      }
+
+      function rebuildLegendAndFilters() {
+        const typeCounts = {};
+        const partCounts = {};
+        const layerCounts = {};
+        for (const id of faceIdsAll) {
+          const meta = getFaceMeta(id);
+          const st = meta.surface_type || "미상";
+          const pn = facePartLabel(meta);
+          const layerLabels = faceLayerLabels(meta);
+          typeCounts[st] = (typeCounts[st] || 0) + 1;
+          partCounts[pn] = (partCounts[pn] || 0) + 1;
+          for (const label of layerLabels) {
+            layerCounts[label] = (layerCounts[label] || 0) + 1;
+          }
+        }
+        const headerLayerSamples = Array.isArray(report?.step_header?.presentation_stats?.layer_named_samples)
+          ? report.step_header.presentation_stats.layer_named_samples
+          : [];
+        for (const s of headerLayerSamples) {
+          const n = String(s?.name || "").trim();
+          const d = String(s?.description || "").trim();
+          const assignmentId = String(s?.assignment_id || "").trim();
+          const label = n || d ? `${n || "(unnamed)"}${d ? `|${d}` : ""}` : assignmentId || "레이어 없음";
+          if (!(label in layerCounts)) layerCounts[label] = 0;
+        }
+
+        const typeNames = Object.keys(typeCounts).sort();
+        const selectedType = surfaceFilterEl.value;
+        const selectedPart = partFilterEl.value;
+        const selectedLayer = layerFilterEl.value;
+        surfaceFilterEl.innerHTML = "";
+        partFilterEl.innerHTML = "";
+        layerFilterEl.innerHTML = "";
+
+        const allOpt = document.createElement("option");
+        allOpt.value = "ALL";
+        allOpt.textContent = "전체 면 타입";
+        surfaceFilterEl.appendChild(allOpt);
+
+        const allPartOpt = document.createElement("option");
+        allPartOpt.value = "ALL";
+        allPartOpt.textContent = "전체 파트";
+        partFilterEl.appendChild(allPartOpt);
+
+        const allLayerOpt = document.createElement("option");
+        allLayerOpt.value = "ALL";
+        allLayerOpt.textContent = "전체 레이어";
+        layerFilterEl.appendChild(allLayerOpt);
+
+        for (const st of typeNames) {
+          const opt = document.createElement("option");
+          opt.value = st;
+          const sInfo = SURFACE_INFO[st] || { ko: st };
+          opt.textContent = `${sInfo.ko} (${st}) - ${typeCounts[st]}`;
+          surfaceFilterEl.appendChild(opt);
+        }
+        const partNames = Object.keys(partCounts).sort((a, b) => String(a).localeCompare(String(b)));
+        for (const pn of partNames) {
+          const opt = document.createElement("option");
+          opt.value = pn;
+          opt.textContent = `${pn} - ${partCounts[pn]}`;
+          partFilterEl.appendChild(opt);
+        }
+        const layerNames = Object.keys(layerCounts).sort((a, b) => String(a).localeCompare(String(b)));
+        for (const ln of layerNames) {
+          const opt = document.createElement("option");
+          opt.value = ln;
+          opt.textContent = `${ln} - ${layerCounts[ln]}`;
+          layerFilterEl.appendChild(opt);
+        }
+        if ([...surfaceFilterEl.options].some((o) => o.value === selectedType)) {
+          surfaceFilterEl.value = selectedType;
+        }
+        if ([...partFilterEl.options].some((o) => o.value === selectedPart)) {
+          partFilterEl.value = selectedPart;
+        }
+        if ([...layerFilterEl.options].some((o) => o.value === selectedLayer)) {
+          layerFilterEl.value = selectedLayer;
+        }
+
+        legendEl.innerHTML = "";
+        for (const st of typeNames) {
+          const row = document.createElement("div");
+          row.className = "legend-item";
+
+          const swatch = document.createElement("span");
+          swatch.className = "swatch";
+          swatch.style.backgroundColor = hexColor(sampleColorForSurface(st));
+          row.appendChild(swatch);
+
+          const text = document.createElement("span");
+          const sInfo = SURFACE_INFO[st] || { ko: st };
+          text.textContent = `${sInfo.ko} (${st}): ${typeCounts[st]}`;
+          row.appendChild(text);
+          legendEl.appendChild(row);
+        }
+
+        renderLayerMap();
+      }
+
+      function applyFilters() {
+        const typeFilter = surfaceFilterEl.value;
+        const partFilter = partFilterEl.value;
+        const layerFilter = layerFilterEl.value;
+        const query = searchEl.value.trim().toLowerCase();
+        const sortMode = sortModeEl.value;
+
+        filteredFaceIds = faceIdsAll.filter((faceId) => {
+          const meta = getFaceMeta(faceId);
+          const sInfo = getSurfaceInfo(meta);
+          const partName = facePartLabel(meta);
+          const bag = [
+            faceId,
+            partName,
+            meta.source_part_name_raw || "",
+            ...(Array.isArray(meta.source_part_names) ? meta.source_part_names : []),
+            meta.source_solid_id || "",
+            ...(Array.isArray(meta.source_solid_ids) ? meta.source_solid_ids : []),
+            meta.source_layer_name || "",
+            meta.source_layer_description || "",
+            meta.source_layer_note || "",
+            ...(Array.isArray(meta.source_layer_names) ? meta.source_layer_names : []),
+            ...(Array.isArray(meta.source_layer_assignment_ids) ? meta.source_layer_assignment_ids : []),
+            ...(Array.isArray(meta.source_layer_ref_ids) ? meta.source_layer_ref_ids : []),
+            meta.surface_type || "",
+            meta.surface_step_entity || "",
+            meta.surface_type_ko || "",
+            sInfo.ko,
+            sInfo.easy,
+            meta.easy_hint_ko || "",
+            meta.display_label || "",
+            meta.dominant_edge_type || "",
+            meta.dominant_edge_step_entity || "",
+            meta.step_advanced_face_id || "",
+            meta.step_surface_ref_id || "",
+            meta.step_surface_placement_ref_id || "",
+            meta.step_shell_id || "",
+            ...(Array.isArray(meta.step_shell_ids) ? meta.step_shell_ids : []),
+            meta.step_shell_entity_raw || "",
+            meta.step_manifold_solid_brep_id || "",
+            ...(Array.isArray(meta.step_manifold_solid_brep_ids) ? meta.step_manifold_solid_brep_ids : []),
+            meta.step_manifold_solid_brep_name || "",
+            ...(Array.isArray(meta.step_manifold_solid_brep_names) ? meta.step_manifold_solid_brep_names : []),
+            meta.step_entity_hierarchy || "",
+            meta.step_surface_entity_raw || "",
+            ...(Array.isArray(meta.edges)
+              ? meta.edges.flatMap((e) => [e?.edge_id || "", e?.curve_step_entity || "", e?.curve_type || ""])
+              : []),
+            ...(Array.isArray(meta.contact_pairs_top)
+              ? meta.contact_pairs_top.flatMap((p) => [p?.other_face_id || "", p?.other_part || ""])
+              : []),
+          ]
+            .join(" ")
+            .toLowerCase();
+
+          const typePass = typeFilter === "ALL" || meta.surface_type === typeFilter;
+          const partPass = partFilter === "ALL" || partName === partFilter;
+          const layerPass = layerFilter === "ALL" || faceLayerLabels(meta).includes(layerFilter);
+          const queryPass = !query || bag.includes(query);
+          return typePass && partPass && layerPass && queryPass;
+        });
+
+        if (sortMode === "area_desc") {
+          filteredFaceIds.sort((a, b) => Number(getFaceMeta(b).area || 0) - Number(getFaceMeta(a).area || 0));
+        } else if (sortMode === "area_asc") {
+          filteredFaceIds.sort((a, b) => Number(getFaceMeta(a).area || 0) - Number(getFaceMeta(b).area || 0));
+        } else {
+          filteredFaceIds = sortFaceIds(filteredFaceIds);
+        }
+
+        const visibleSet = new Set(filteredFaceIds);
+        for (const mesh of allMeshes) {
+          if (mesh.userData.isSelectable) {
+            mesh.visible = visibleSet.has(mesh.name);
+          } else {
+            mesh.visible = true;
+          }
+        }
+
+        filteredCountEl.textContent = `표시: ${filteredFaceIds.length} / 전체: ${faceIdsAll.length}`;
+        rebuildFaceList(filteredFaceIds);
+
+        if (selectedFaceId && !visibleSet.has(selectedFaceId)) {
+          selectedFaceId = null;
+          clearOutline();
+        }
+        updateMeshStyles();
+        if (!selectedFaceId) {
+          renderNoSelection();
+        }
+      }
+
+      canvas.addEventListener("click", (ev) => {
+        const rect = canvas.getBoundingClientRect();
+        pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(pointer, camera);
+        const pickables = selectable.filter((m) => m.visible);
+        const hits = raycaster.intersectObjects(pickables, false);
+        if (hits.length > 0) {
+          selectFace(hits[0].object.name);
+        } else {
+          clearSelection();
+        }
+      });
+
+      function renderStepNameHint() {
+        const stats = report?.step_header?.entity_name_stats || {};
+        const adv = stats.advanced_face;
+        const edge = stats.edge_curve;
+        if (!adv || !edge) {
+          nameHintEl.textContent = "";
+          return;
+        }
+
+        if (adv.named === 0 && edge.named === 0) {
+          nameHintEl.textContent = `STEP 원본 면/엣지 이름이 거의 없습니다. (ADVANCED_FACE ${adv.named}/${adv.total}, EDGE_CURVE ${edge.named}/${edge.total})`;
+        } else {
+          nameHintEl.textContent = `STEP 이름 필드: ADVANCED_FACE ${adv.named}/${adv.total}, EDGE_CURVE ${edge.named}/${edge.total}`;
+        }
+      }
+
+      function toAbsPath(url) {
+        try {
+          return new URL(url, location.href).pathname;
+        } catch {
+          return String(url || "");
+        }
+      }
+
+      function setModelPathLabel(modelUrl, reportUrl) {
+        modelPathEl.textContent = `모델: ${modelUrl} | 리포트: ${reportUrl}`;
+      }
+
+      function bundleFolderName(bundle) {
+        const rawModel = String(bundle?.model || "");
+        try {
+          const p = new URL(rawModel, location.href).pathname;
+          const parts = p.split("/").filter(Boolean);
+          return parts[0] || "미상";
+        } catch {
+          const parts = rawModel.split("/").filter(Boolean);
+          return parts[0] || "미상";
+        }
+      }
+
+      function rebuildModelSelectOptions(targetModelAbs = "", targetReportAbs = "") {
+        const selectedFolder = folderSelectEl.value || "ALL";
+        visibleBundleIndices = [];
+        modelSelectEl.innerHTML = "";
+
+        modelBundles.forEach((bundle, idx) => {
+          const folder = bundleFolderName(bundle);
+          if (selectedFolder !== "ALL" && folder !== selectedFolder) return;
+          visibleBundleIndices.push(idx);
+        });
+
+        if (visibleBundleIndices.length === 0) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "선택 폴더에 모델 없음";
+          modelSelectEl.appendChild(opt);
+          return;
+        }
+
+        let selectedViewIdx = 0;
+        visibleBundleIndices.forEach((bundleIdx, viewIdx) => {
+          const b = modelBundles[bundleIdx];
+          const opt = document.createElement("option");
+          opt.value = String(viewIdx);
+          opt.textContent = b.name || `모델-${bundleIdx + 1}`;
+          modelSelectEl.appendChild(opt);
+          if (toAbsPath(b.model) === targetModelAbs && toAbsPath(b.report) === targetReportAbs) {
+            selectedViewIdx = viewIdx;
+          }
+        });
+        modelSelectEl.value = String(selectedViewIdx);
+      }
+
+      function clearLoadedObject() {
+        if (loadedObject && loadedObject.parent) {
+          loadedObject.parent.remove(loadedObject);
+        }
+        if (loadedObject) {
+          loadedObject.traverse((child) => {
+            if (!child?.isMesh) return;
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                for (const m of child.material) m.dispose?.();
+              } else {
+                child.material.dispose?.();
+              }
+            }
+          });
+        }
+        loadedObject = null;
+        selectable = [];
+        allMeshes = [];
+        faceIdsAll = [];
+        filteredFaceIds = [];
+        meshByFaceId.clear();
+        clearSelection();
+        legendEl.innerHTML = "";
+        layerMapEl.innerHTML = "";
+        if (layerMapSearchEl) layerMapSearchEl.value = "";
+        faceListEl.innerHTML = "";
+        filteredCountEl.textContent = "";
+      }
+
+      function updateUrlQuery(modelUrl, reportUrl) {
+        const q = new URLSearchParams(location.search);
+        q.set("model", modelUrl);
+        q.set("report", reportUrl);
+        history.replaceState(null, "", `${location.pathname}?${q.toString()}`);
+      }
+
+      async function loadModelBundle(modelUrl, reportUrl) {
+        currentModelUrl = modelUrl;
+        currentReportUrl = reportUrl;
+        setModelPathLabel(modelUrl, reportUrl);
+        clearLoadedObject();
+
+        const [loadedReport, obj] = await Promise.all([
+          fetch(reportUrl).then((r) => {
+            if (!r.ok) throw new Error(`리포트 로드 실패: ${r.status}`);
+            return r.json();
+          }),
+          new OBJLoader().loadAsync(modelUrl),
+        ]);
+        report = loadedReport;
+        renderGlossary();
+        renderHumanSignals();
+
+        countsEl.textContent = `솔리드: ${report.counts.solids}, 면: ${report.counts.faces}, 엣지: ${report.counts.edges}`;
+        renderStepNameHint();
+
+        const foundFaceIds = [];
+        obj.traverse((child) => {
+          if (!child.isMesh) return;
+          allMeshes.push(child);
+          const faceId = resolveFaceIdFromNode(child);
+          const meta = faceId ? getFaceMeta(faceId) : null;
+          const color = meta ? resolveSourceColor(meta) : 0xc7cec7;
+          child.material = new THREE.MeshStandardMaterial({
+            color,
+            roughness: 0.62,
+            metalness: 0.05,
+            emissive: 0x000000,
+          });
+          child.userData.baseColor = color;
+
+          if (!faceId) {
+            child.userData.isSelectable = false;
+            return;
+          }
+
+          child.userData.isSelectable = true;
+          child.name = faceId;
+          selectable.push(child);
+          foundFaceIds.push(faceId);
+          if (!meshByFaceId.has(faceId)) meshByFaceId.set(faceId, child);
+        });
+
+        faceIdsAll = sortFaceIds(Array.from(new Set(foundFaceIds)));
+        if (faceIdsAll.length === 0) {
+          selectedSummaryEl.textContent = "면 그룹 없음";
+          metaEl.textContent = "out/model.obj에 `o FaceN` 그룹이 있는지 확인하세요.";
+          return;
+        }
+
+        rebuildLegendAndFilters();
+        applyFilters();
+        scene.add(obj);
+        loadedObject = obj;
+
+        const box = new THREE.Box3().setFromObject(obj);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        controls.target.copy(center);
+
+        const dist = Math.max(size.x, size.y, size.z) * 1.8 || 10;
+        camera.position.set(center.x + dist, center.y + dist, center.z + dist);
+        updateUrlQuery(modelUrl, reportUrl);
+      }
+
+      async function refreshModelList() {
+        let models = [];
+        try {
+          const res = await fetch("/api/models");
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.models)) models = data.models;
+          }
+        } catch (_) {
+          // fallback below
+        }
+        if (models.length === 0) {
+          models = [
+            {
+              name: "out (기본)",
+              model: currentModelUrl || DEFAULT_MODEL_URL,
+              report: currentReportUrl || DEFAULT_REPORT_URL,
+            },
+          ];
+        }
+
+        if (models.length > 0) {
+          const hasExplicitQuery = Boolean(QUERY_MODEL_URL && QUERY_REPORT_URL);
+          if (hasExplicitQuery) {
+            const qModelAbs = toAbsPath(QUERY_MODEL_URL);
+            const qReportAbs = toAbsPath(QUERY_REPORT_URL);
+            if (qModelAbs.startsWith("/out/") && qReportAbs.startsWith("/out/")) {
+              const upgradedModelAbs = qModelAbs.replace(/^\/out\//, "/out_v2/");
+              const upgradedReportAbs = qReportAbs.replace(/^\/out\//, "/out_v2/");
+              const upgraded = models.find(
+                (m) => toAbsPath(m.model) === upgradedModelAbs && toAbsPath(m.report) === upgradedReportAbs,
+              );
+              if (upgraded) {
+                currentModelUrl = upgraded.model;
+                currentReportUrl = upgraded.report;
+              }
+            }
+          } else {
+            const preferred = models.find((m) => bundleFolderName(m) === "out_v2");
+            if (preferred) {
+              currentModelUrl = preferred.model;
+              currentReportUrl = preferred.report;
+            }
+          }
+        }
+
+        modelBundles = models;
+        const targetModelAbs = toAbsPath(currentModelUrl || DEFAULT_MODEL_URL);
+        const targetReportAbs = toAbsPath(currentReportUrl || DEFAULT_REPORT_URL);
+        const selectedFolder = folderSelectEl.value || "ALL";
+
+        const folders = [...new Set(modelBundles.map((b) => bundleFolderName(b)))].sort((a, b) => String(a).localeCompare(String(b)));
+        folderSelectEl.innerHTML = "";
+        const allOpt = document.createElement("option");
+        allOpt.value = "ALL";
+        allOpt.textContent = "전체 출력 폴더";
+        folderSelectEl.appendChild(allOpt);
+        for (const f of folders) {
+          const opt = document.createElement("option");
+          opt.value = f;
+          opt.textContent = f;
+          folderSelectEl.appendChild(opt);
+        }
+        if ([...folderSelectEl.options].some((o) => o.value === selectedFolder)) {
+          folderSelectEl.value = selectedFolder;
+        } else {
+          const currentFolder = bundleFolderName({ model: currentModelUrl });
+          folderSelectEl.value = [...folderSelectEl.options].some((o) => o.value === currentFolder) ? currentFolder : "ALL";
+        }
+
+        rebuildModelSelectOptions(targetModelAbs, targetReportAbs);
+      }
+
+      async function loadSelectedFromDropdown() {
+        const viewIdx = Number.parseInt(modelSelectEl.value, 10);
+        if (!Number.isFinite(viewIdx) || viewIdx < 0 || viewIdx >= visibleBundleIndices.length) return;
+        const bundleIdx = visibleBundleIndices[viewIdx];
+        const bundle = modelBundles[bundleIdx];
+        if (!bundle) return;
+        await loadModelBundle(bundle.model, bundle.report);
+      }
+
+      surfaceFilterEl.addEventListener("change", applyFilters);
+      partFilterEl.addEventListener("change", applyFilters);
+      layerFilterEl.addEventListener("change", applyFilters);
+      layerMapSearchEl.addEventListener("input", renderLayerMap);
+      folderSelectEl.addEventListener("change", () => {
+        rebuildModelSelectOptions();
+        loadSelectedFromDropdown().catch((e) => {
+          selectedSummaryEl.textContent = "로드 실패";
+          metaEl.textContent = `${e.message}`;
+          console.error(e);
+        });
+      });
+      sortModeEl.addEventListener("change", applyFilters);
+      searchEl.addEventListener("input", applyFilters);
+      groupFaceListEl.addEventListener("change", () => rebuildFaceList(filteredFaceIds));
+      isolateEl.addEventListener("change", updateMeshStyles);
+      opacityScaleEl.addEventListener("input", () => {
+        opacityScale = Number.parseFloat(opacityScaleEl.value) || 1.0;
+        updateOpacityScaleLabel();
+        updateMeshStyles();
+      });
+      prevFaceBtn.addEventListener("click", () => selectAdjacentFace(-1));
+      nextFaceBtn.addEventListener("click", () => selectAdjacentFace(1));
+      fitSelectedBtn.addEventListener("click", () => {
+        const mesh = meshForFace(selectedFaceId);
+        fitCameraToMesh(mesh);
+      });
+      modelSelectEl.addEventListener("change", () => {
+        loadSelectedFromDropdown().catch((e) => {
+          selectedSummaryEl.textContent = "로드 실패";
+          metaEl.textContent = `${e.message}`;
+          console.error(e);
+        });
+      });
+      modelSelectEl.addEventListener("input", () => {
+        loadSelectedFromDropdown().catch((e) => {
+          selectedSummaryEl.textContent = "로드 실패";
+          metaEl.textContent = `${e.message}`;
+          console.error(e);
+        });
+      });
+      refreshModelsEl.addEventListener("click", () => {
+        refreshModelList().catch((e) => {
+          selectedSummaryEl.textContent = "모델 목록 로드 실패";
+          metaEl.textContent = `${e.message}`;
+          console.error(e);
+        });
+      });
+
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "[") selectAdjacentFace(-1);
+        if (e.key === "]") selectAdjacentFace(1);
+        if (e.key === "Escape") clearSelection();
+      });
+
+      function animate() {
+        resize();
+        controls.update();
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+      }
+
+      (async () => {
+        await refreshModelList();
+        await loadSelectedFromDropdown();
+      })().catch((e) => {
+        selectedSummaryEl.textContent = "로드 실패";
+        metaEl.textContent = `${e.message}`;
+        console.error(e);
+      });
+      updateOpacityScaleLabel();
+      animate();
+    </script>
+  </body>
+</html>
